@@ -5,8 +5,13 @@
     "apiKey": "_PUT_APIKEY_HERE_",
     "javascript": [
         "node_modules/@agile-central-technical-services/utils-ancestor-pi-inline-filter/index.js",
+        "node_modules/@customagile/ancestor-pi-multi-level-pi-app-filter/index.js",
         "node_modules/@agile-central-technical-services/utils-shared-views/index.js",
         "src/javascript/utils/*.js",
         "src/javascript/*.js"
+    ],
+    "css": [
+        "src/style/app.css",
+        "node_modules/@customagile/ancestor-pi-multi-level-pi-app-filter/index.css"
     ]
 }
