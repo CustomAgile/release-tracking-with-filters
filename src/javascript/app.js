@@ -103,6 +103,7 @@ Ext.define("release-tracking-with-filters", {
     },
 
     launch: function () {
+        Rally.data.wsapi.Proxy.superclass.timeout = 120000;
         this._setSharedViewOverrides();
 
         var dateRangeArea = this.down('#date-range-area');
@@ -250,7 +251,12 @@ Ext.define("release-tracking-with-filters", {
         this.setLoading(true);
         this.currentIterations = await this._updateIterationsStore();
         await this._updatePisStore();
-        this._addPisGrid(this.piStore);
+
+        if (!this.loadingFailed) {
+            this._addPisGrid(this.piStore);
+        } else {
+            this.setLoading(false);
+        }
     },
 
     setLoading: function (loading) {
@@ -275,12 +281,17 @@ Ext.define("release-tracking-with-filters", {
     },
 
     _updatePisStore: async function () {
+        this.loadingFailed = false;
         this.currentDataContext = this.getContext().getDataContext();
         if (this.searchAllProjects()) {
             this.currentDataContext.project = null;
         }
 
         this.currentPiQueries = await this._getPiQueries();
+
+        if (this.loadingFailed) {
+            return;
+        }
 
         this.piStore = await Ext.create('Rally.data.wsapi.TreeStoreBuilder').build({
             models: [this.lowestPiTypePath],
@@ -340,8 +351,14 @@ Ext.define("release-tracking-with-filters", {
         }
 
         if (this.ancestorFilterPlugin) {
-            var filters = await this.ancestorFilterPlugin.getAllFiltersForType(this.lowestPiTypePath, false);
-            queries = queries.concat(filters);
+            var filters = await this.ancestorFilterPlugin.getAllFiltersForType(this.lowestPiTypePath, false).catch((e) => {
+                Rally.ui.notify.Notifier.showError({ message: (e.message || e) });
+                this.loadingFailed = true;
+            });
+
+            if (filters) {
+                queries = queries.concat(filters);
+            }
         }
 
         return queries;
@@ -455,7 +472,8 @@ Ext.define("release-tracking-with-filters", {
                 store: store,
                 storeConfig: {
                     context: this.currentDataContext,
-                    filters: this.currentPiQueries
+                    filters: this.currentPiQueries,
+                    enablePostGet: true
                 },
                 listeners: {
                     scope: this,
@@ -533,7 +551,8 @@ Ext.define("release-tracking-with-filters", {
         this.buckets = {};
         this.board.refresh({
             storeConfig: {
-                filters: filter
+                filters: filter,
+                enablePostGet: true
             }
         });
     },
@@ -609,7 +628,8 @@ Ext.define("release-tracking-with-filters", {
                 filters: filter,
                 fetch: [this.lowestPiTypeName].concat(Constants.STORIES_FETCH),
                 groupField: this.lowestPiTypeName,
-                context: this.currentDataContext
+                context: this.currentDataContext,
+                enablePostGet: true
             },
             listeners: {
                 scope: this,
@@ -689,6 +709,7 @@ Ext.define("release-tracking-with-filters", {
                                     storeConfig: {
                                         filters: filters,
                                         context: context,
+                                        enablePostGet: true
                                     },
                                     columnCfgs: Constants.STORY_COLUMNS,
                                 }
