@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>release-tracking-with-filters-1.1.1</title>
+    <title>release-tracking-with-filters-1.1.2</title>
     <!--  (c) 2019 Custom Agile.  All Rights Reserved. -->
-    <!--  Build Date: Tue Sep 17 2019 13:40:00 GMT-0700 (Pacific Daylight Time) -->
+    <!--  Build Date: Mon Sep 23 2019 11:15:45 GMT-0700 (Pacific Daylight Time) -->
 
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Tue Sep 17 2019 13:40:00 GMT-0700 (Pacific Daylight Time)";
-        var CHECKSUM = 456774465616;
+        var APP_BUILD_DATE = "Mon Sep 23 2019 11:15:45 GMT-0700 (Pacific Daylight Time)";
+        var CHECKSUM = 450630565151;
     </script>
 
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -3093,6 +3093,8 @@ Ext.define("release-tracking-with-filters", {
         id: 'filter-area',
         region: 'north',
         xtype: 'panel',
+        minHeight: 280,
+        overflowY: 'auto',
         collapsible: true,
         margins: '0 0 10 0',
         header: {
@@ -3107,6 +3109,14 @@ Ext.define("release-tracking-with-filters", {
         },
         items: [{
             id: Utils.AncestorPiAppFilter.RENDER_AREA_ID,
+            xtype: 'container',
+            layout: {
+                type: 'hbox',
+                align: 'middle',
+                defaultMargins: 5,
+            }
+        }, {
+            id: 'sharedViewsContainer',
             xtype: 'container',
             layout: {
                 type: 'hbox',
@@ -3148,9 +3158,6 @@ Ext.define("release-tracking-with-filters", {
             },
         }]
     },
-    // , {
-    //     xtype: 'splitter'
-    // },
     {
         id: 'right-area',
         region: 'center',
@@ -3160,7 +3167,6 @@ Ext.define("release-tracking-with-filters", {
         align: 'stretch',
         overflowX: 'auto',
         overflowY: 'auto',
-        //padding: '0 0 0 20',
         items: [{
             id: 'date-range-area',
             xtype: 'container',
@@ -3172,8 +3178,6 @@ Ext.define("release-tracking-with-filters", {
             flex: 1,
             type: 'vbox',
             align: 'stretch',
-            //overflowX: 'auto',
-            //overflowY: 'auto',
             margin: '0 0 0 20'
         }]
     }
@@ -3190,7 +3194,6 @@ Ext.define("release-tracking-with-filters", {
 
     launch: function () {
         Rally.data.wsapi.Proxy.superclass.timeout = 120000;
-        this._setSharedViewOverrides();
 
         var dateRangeArea = this.down('#date-range-area');
         dateRangeArea.add([{
@@ -3232,7 +3235,6 @@ Ext.define("release-tracking-with-filters", {
             ptype: 'UtilsAncestorPiAppFilter',
             pluginId: 'ancestorFilterPlugin',
             settingsConfig: {},
-            // TODO: allProjectsContext ?
             whiteListFields: [
                 'Tags',
                 'Milestones'
@@ -3246,7 +3248,6 @@ Ext.define("release-tracking-with-filters", {
                         select: this._update,
                         change: this._update
                     });
-                    // dialog.setLoading(false);
                     this.portfolioItemTypes = plugin.portfolioItemTypes;
                     this.lowestPi = this.portfolioItemTypes[0];
                     this.lowestPiTypePath = this.lowestPi.get('TypePath');
@@ -3256,8 +3257,9 @@ Ext.define("release-tracking-with-filters", {
                         type: this.lowestPiTypePath
                     }).then({
                         scope: this,
-                        success: function (model) {
+                        success: async function (model) {
                             this.lowestPiModel = model;
+                            await this._addSharedViewsCombo();
                             this._update();
                         }
                     });
@@ -3266,73 +3268,66 @@ Ext.define("release-tracking-with-filters", {
         });
 
         this.addPlugin(this.ancestorFilterPlugin);
-
-        //var promises = [];
-
-        // Get lowest PI type.
-        // promises.push(Rally.data.util.PortfolioItemHelper.getPortfolioItemTypes().then({
-        //     scope: this,
-        //     success: function (records) {
-        //         this.portfolioItemTypes = records;
-        //         this.lowestPi = this.portfolioItemTypes[0];
-        //         this.lowestPiTypePath = this.lowestPi.get('TypePath');
-        //         this.lowestPiTypeName = this.lowestPi.get('Name');
-        //         this.modelNames = [this.lowestPiTypePath];
-        //         return Rally.data.wsapi.ModelFactory.getModel({
-        //             type: this.lowestPiTypePath
-        //         });
-        //     }
-        // }).then({
-        //     scope: this,
-        //     success: function (model) {
-        //         this.lowestPiModel = model;
-        //     }
-        // }));
-
-        // // Wait for lowest pi and release selection, then update
-        // Deft.promise.Promise.all(promises).then({
-        //     scope: this,
-        //     success: this._update
-        // });
     },
 
-    _setSharedViewOverrides() {
-        Ext.override(Rally.ui.gridboard.GridBoard, {
-            getCurrentView: function () {
-                var ancestorData = Rally.getApp().ancestorFilterPlugin._getValue();
-                // Delete piRecord to avoid recursive stack overflow error
-                delete ancestorData.piRecord;
-                var views = Ext.apply(this.callParent(arguments), ancestorData);
-
-                return views;
-            },
-            setCurrentView: function (view) {
-                var app = Rally.getApp();
-                this.setLoading('Loading View...');
-                Ext.suspendLayouts();
-                app.settingView = true;
-                if (app.ancestorFilterPlugin) {
-                    if (app.ancestorFilterPlugin.renderArea.down('#ignoreScopeControl')) {
-                        app.ancestorFilterPlugin.renderArea.down('#ignoreScopeControl').setValue(view.ignoreProjectScope);
+    _addSharedViewsCombo: function () {
+        return new Promise(function (resolve) {
+            this.down('#sharedViewsContainer').add([
+                {
+                    xtype: 'rallysharedviewcombobox',
+                    title: 'Shared Views',
+                    itemId: 'releaseTrackingSharedViewCombobox',
+                    enableUrlSharing: true,
+                    context: this.getContext(),
+                    cmp: this,
+                    listeners: {
+                        ready: function (combo) {
+                            combo.setValue(null);
+                            resolve();
+                        }
                     }
-                    app.ancestorFilterPlugin.setMultiLevelFilterStates(view.filterStates);
-                    app.ancestorFilterPlugin._setPiSelector(view.piTypePath, view.pi);
                 }
-                this.callParent(arguments);
+            ]);
+        }.bind(this));
+    },
 
-                setTimeout(async function () {
-                    Ext.resumeLayouts(true);
-                    app.settingView = false;
-                    this.setLoading(false);
-                    app._update();
-                }.bind(this), 400);
+    getCurrentView: function () {
+        var ancestorData = Rally.getApp().ancestorFilterPlugin._getValue();
+
+        // Delete piRecord to avoid recursive stack overflow error
+        delete ancestorData.piRecord;
+
+        var gridView = this.down('rallygridboard').getCurrentView();
+        var views = Ext.apply(gridView, ancestorData);
+
+        return views;
+    },
+
+    setCurrentView: function (view) {
+        var app = Rally.getApp();
+        this.setLoading('Loading View...');
+        Ext.suspendLayouts();
+        app.settingView = true;
+        if (app.ancestorFilterPlugin) {
+            if (app.ancestorFilterPlugin.renderArea.down('#ignoreScopeControl')) {
+                app.ancestorFilterPlugin.renderArea.down('#ignoreScopeControl').setValue(view.ignoreProjectScope);
             }
-        });
+            app.ancestorFilterPlugin.setMultiLevelFilterStates(view.filterStates);
+            app.ancestorFilterPlugin._setPiSelector(view.piTypePath, view.pi);
+        }
+        this.down('rallygridboard').setCurrentView(view);
+
+        setTimeout(async function () {
+            Ext.resumeLayouts(true);
+            app.settingView = false;
+            this.setLoading(false);
+            app._update();
+        }.bind(this), 400);
     },
 
     _update: async function () {
-        if (this.down('#releaseTrackingSharedViewCombo')) {
-            this.down('#releaseTrackingSharedViewCombo').setValue(null);
+        if (this.down('#releaseTrackingSharedViewCombobox')) {
+            this.down('#releaseTrackingSharedViewCombobox').setValue(null);
         }
         this.setLoading(true);
         this.currentIterations = await this._updateIterationsStore();
@@ -3526,19 +3521,10 @@ Ext.define("release-tracking-with-filters", {
             {
                 ptype: 'rallygridboardfieldpicker',
                 headerPosition: 'left',
+                margin: '1 9 0 9',
                 modelNames: this.modelNames,
                 stateful: true,
                 stateId: this.getModelScopedStateId(currentModelName, 'fields'),
-            },
-            // this.scopeControlPlugin,
-            {
-                ptype: 'rallygridboardsharedviewcontrol',
-                sharedViewConfig: {
-                    stateful: true,
-                    stateId: this.getModelScopedStateId(currentModelName, 'views'),
-                    stateEvents: ['select', 'beforedestroy'],
-                    itemId: 'releaseTrackingSharedViewCombo'
-                },
             },
             {
                 ptype: 'rallygridboardactionsmenu',
@@ -3650,9 +3636,6 @@ Ext.define("release-tracking-with-filters", {
 
         this.buckets = {};
 
-        // var context = this.getContext();
-        // var dataContext = context.getDataContext();
-
         // Create a column for each iteration shared by the projects
         var endDateSorted = _.sortBy(iterations, function (i) {
             return i.get('EndDate');
@@ -3709,7 +3692,6 @@ Ext.define("release-tracking-with-filters", {
             xtype: 'rallycardboard',
             type: ['HierarchicalRequirement'],
             attribute: 'Iteration',
-            //height: boardArea.getHeight(),
             storeConfig: {
                 filters: filter,
                 fetch: [this.lowestPiTypeName].concat(Constants.STORIES_FETCH),
