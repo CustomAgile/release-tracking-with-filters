@@ -435,7 +435,7 @@ Ext.define("release-tracking-with-filters", {
             {
                 ptype: 'rallygridboardfieldpicker',
                 headerPosition: 'left',
-                margin: '1 9 0 9',
+                margin: '0 9 0 9',
                 modelNames: this.modelNames,
                 stateful: true,
                 stateId: this.getModelScopedStateId(currentModelName, 'fields'),
