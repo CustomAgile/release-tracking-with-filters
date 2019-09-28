@@ -461,6 +461,13 @@ Ext.define("release-tracking-with-filters", {
                     filters: this.currentPiQueries,
                     enablePostGet: true
                 },
+                columnCfgs: [{
+                    dataIndex: 'FormattedID',
+                    text: 'ID'
+                }, {
+                    dataIndex: 'Name',
+                    text: 'Name'
+                }],
                 listeners: {
                     scope: this,
                     // TODO (tj) support multi item selection

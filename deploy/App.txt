@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>release-tracking-with-filters-1.1.4</title>
+    <title>release-tracking-with-filters-1.1.5</title>
     <!--  (c) 2019 Custom Agile.  All Rights Reserved. -->
-    <!--  Build Date: Thu Sep 26 2019 15:11:38 GMT-0700 (Pacific Daylight Time) -->
+    <!--  Build Date: Fri Sep 27 2019 18:04:04 GMT-0700 (Pacific Daylight Time) -->
 
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Sep 26 2019 15:11:38 GMT-0700 (Pacific Daylight Time)";
-        var CHECKSUM = 454449960208;
+        var APP_BUILD_DATE = "Fri Sep 27 2019 18:04:04 GMT-0700 (Pacific Daylight Time)";
+        var CHECKSUM = 455157380864;
     </script>
 
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -3569,6 +3569,13 @@ Ext.define("release-tracking-with-filters", {
                     filters: this.currentPiQueries,
                     enablePostGet: true
                 },
+                columnCfgs: [{
+                    dataIndex: 'FormattedID',
+                    text: 'ID'
+                }, {
+                    dataIndex: 'Name',
+                    text: 'Name'
+                }],
                 listeners: {
                     scope: this,
                     // TODO (tj) support multi item selection
