@@ -98,7 +98,7 @@ Ext.define("release-tracking-with-filters", {
     ],
     config: {
         defaultSettings: {
-            showDependencyLines: false
+            'ReleaseTrackingWithFilters.dependencyLines': 'noDependencyLines'
         },
     },
 
@@ -109,14 +109,37 @@ Ext.define("release-tracking-with-filters", {
     launch: function () {
         Rally.data.wsapi.Proxy.superclass.timeout = 120000;
 
-        var dateRangeArea = this.down('#date-range-area');
+        Ext.override(Rally.ui.cardboard.CardBoard, {
+            getCards: function () {
+                let cards = [];
+                _.each(this.columnDefinitions, function (column) {
+                    cards = cards.concat(column.getCards());
+                });
+                return cards;
+            },
+            // fireEvent: function (name) {
+            //     console.log(name);
+            //     this.callParent(arguments);
+            // }
+        });
+
+        // Ext.override(Ext.container.Container, {
+        //     fireEvent: function (name) {
+        //         console.log(name);
+        //         this.callParent(arguments);
+        //     }
+        // });
+
+        this.down('#right-area').on('resize', this.onCardboardResize, this);
+
+        let dateRangeArea = this.down('#date-range-area');
         dateRangeArea.add([{
             xtype: 'rallydatefield',
             id: 'start-date-picker',
             fieldLabel: Constants.START_DATE,
             labelWidth: 120,
             labelCls: 'date-label',
-            minWidth: 200,
+            width: 220,
             margin: '0 10 0 0',
             listeners: {
                 scope: this,
@@ -130,7 +153,7 @@ Ext.define("release-tracking-with-filters", {
             id: 'end-date-picker',
             fieldLabel: Constants.END_DATE,
             labelWidth: 30,
-            minWidth: 200,
+            width: 130,
             labelCls: 'date-label',
             margin: '0 10 0 0',
             listeners: {
@@ -142,7 +165,7 @@ Ext.define("release-tracking-with-filters", {
             }
         }]);
 
-        var timeboxScope = this.getContext().getTimeboxScope();
+        let timeboxScope = this.getContext().getTimeboxScope();
         this._onTimeboxScopeChange(timeboxScope);
 
         this.ancestorFilterPlugin = Ext.create('Utils.AncestorPiAppFilter', {
@@ -181,6 +204,9 @@ Ext.define("release-tracking-with-filters", {
             }
         });
 
+        this.down('#filter-area').on('collapse', this.onResize, this);
+        this.down('#filter-area').on('expand', this.onResize, this);
+
         this.addPlugin(this.ancestorFilterPlugin);
     },
 
@@ -206,19 +232,19 @@ Ext.define("release-tracking-with-filters", {
     },
 
     getCurrentView: function () {
-        var ancestorData = Rally.getApp().ancestorFilterPlugin._getValue();
+        let ancestorData = Rally.getApp().ancestorFilterPlugin._getValue();
 
         // Delete piRecord to avoid recursive stack overflow error
         delete ancestorData.piRecord;
 
-        var gridView = this.down('rallygridboard').getCurrentView();
-        var views = Ext.apply(gridView, ancestorData);
+        let gridView = this.down('rallygridboard').getCurrentView();
+        let views = Ext.apply(gridView, ancestorData);
 
         return views;
     },
 
     setCurrentView: function (view) {
-        var app = Rally.getApp();
+        let app = Rally.getApp();
         this.setLoading('Loading View...');
         Ext.suspendLayouts();
         app.settingView = true;
@@ -254,21 +280,22 @@ Ext.define("release-tracking-with-filters", {
         }
     },
 
-    setLoading: function (loading) {
-        this.down('#board-area').setLoading(loading);
-        if (this.grid) {
-            var treegrid = this.grid.down('rallytreegrid');
-            if (treegrid) {
-                treegrid.setLoading(loading);
-            }
-        }
-    },
+    //setLoading: function (loading) {
+    // this.setLoading(loading);
+    // this.down('#board-area').setLoading(loading);
+    // if (this.grid) {
+    //     let treegrid = this.grid.down('rallytreegrid');
+    //     if (treegrid) {
+    //         treegrid.setLoading(loading);
+    //     }
+    // }
+    // },
 
     // Usual monkey business to size gridboards
     onResize: function () {
         this.callParent(arguments);
-        var gridArea = this.down('#grid-area');
-        var grid = this.down('rallygridboard');
+        let gridArea = this.down('#grid-area');
+        let grid = this.down('rallygridboard');
         if (gridArea && grid) {
             grid.setHeight(gridArea.getHeight());
         }
@@ -304,7 +331,7 @@ Ext.define("release-tracking-with-filters", {
     },
 
     _getPiQueries: async function () {
-        var queries = [];
+        let queries = [];
 
         switch (this.timeboxType) {
             case 'release':
@@ -346,7 +373,7 @@ Ext.define("release-tracking-with-filters", {
         }
 
         if (this.ancestorFilterPlugin) {
-            var filters = await this.ancestorFilterPlugin.getAllFiltersForType(this.lowestPiTypePath, false).catch((e) => {
+            let filters = await this.ancestorFilterPlugin.getAllFiltersForType(this.lowestPiTypePath, false).catch((e) => {
                 Rally.ui.notify.Notifier.showError({ message: (e.message || e) });
                 this.loadingFailed = true;
             });
@@ -360,7 +387,7 @@ Ext.define("release-tracking-with-filters", {
     },
 
     _updateIterationsStore: async function () {
-        var filter = Rally.data.wsapi.Filter.and([{
+        let filter = Rally.data.wsapi.Filter.and([{
             property: 'EndDate',
             operator: '>=',
             value: this.timeboxStart
@@ -375,7 +402,7 @@ Ext.define("release-tracking-with-filters", {
             filters: filter,
             context: this.getContext().getDataContext()
         });
-        var iterations = await this.iterationsStore.load();
+        let iterations = await this.iterationsStore.load();
         return iterations;
     },
 
@@ -384,14 +411,14 @@ Ext.define("release-tracking-with-filters", {
     },
 
     _addPisGrid: function (store) {
-        var gridArea = this.down('#grid-area');
+        let gridArea = this.down('#grid-area');
         if (gridArea) {
             gridArea.removeAll();
         }
-        var currentModelName = this.modelNames[0];
-        var allProjectsContext = this.getContext().getDataContext();
+        let currentModelName = this.modelNames[0];
+        let allProjectsContext = this.getContext().getDataContext();
         allProjectsContext.project = null;
-        var gridExporter = Ext.create('TsExportGrid', {
+        let gridExporter = Ext.create('TsExportGrid', {
             model: this.lowestPiTypePath,
             gridId: 'pisGrid',
             context: this.getContext(),
@@ -459,7 +486,9 @@ Ext.define("release-tracking-with-filters", {
                 storeConfig: {
                     context: this.currentDataContext,
                     filters: this.currentPiQueries,
-                    enablePostGet: true
+                    enablePostGet: true,
+                    pageSize: 2000,
+                    limit: Infinity
                 },
                 columnCfgs: [{
                     dataIndex: 'FormattedID',
@@ -485,22 +514,21 @@ Ext.define("release-tracking-with-filters", {
     },
 
     _onGridLoad: function (grid) {
-        var store = grid.getGridOrBoard().getStore();
-        var root = store.getRootNode();
+        let store = grid.getGridOrBoard().getStore();
+        let root = store.getRootNode();
 
         if (root.childNodes && root.childNodes.length) {
-            var oids = _.map(root.childNodes, function (pi) {
+            let oids = _.map(root.childNodes, function (pi) {
                 return pi.get('ObjectID');
             }, this).join(',');
 
             // Performance may be better by using 'in' instead of a collection of ORs
-            var query = Ext.create('Rally.data.wsapi.Filter', {
+            let query = Ext.create('Rally.data.wsapi.Filter', {
                 property: this.lowestPiTypeName + '.ObjectID',
                 operator: 'in',
                 value: oids
             });
 
-            // If there are no PIs, then explicitly filter out all stories
             this.storiesFilter = query;
         }
         else {
@@ -517,17 +545,27 @@ Ext.define("release-tracking-with-filters", {
             value: null
         });
 
-        var boardPromise = this._addPisBoard(this.storiesFilter, this.currentIterations).then({
+        let boardPromise = this._addPisBoard(this.storiesFilter, this.currentIterations).then({
             scope: this,
-            success: function () {
-                this.setLoading(false);
+            success: function (board) {
+                if (this.getSetting('ReleaseTrackingWithFilters.dependencyLines') === 'showDependencyLines') {
+                    // setTimeout(() => { this.showAllStoryDependencyLines(board); }, 5000);
+                    for (let def of board.rowDefinitions) {
+                        def.on('collapse', this.onCardboardResize, this);
+                        def.on('expand', this.onCardboardResize, this);
+                    }
+                    this.showAllStoryDependencyLines(board);
+                }
+                else {
+                    this.setLoading(false);
+                }
             }
         });
         return boardPromise;
     },
 
     _onPiSelected: function (pi) {
-        var filter;
+        let filter;
         if (this.selectedPi === pi) {
             // Unselecting the pi
             filter = this.storiesFilter;
@@ -545,30 +583,32 @@ Ext.define("release-tracking-with-filters", {
         this.board.refresh({
             storeConfig: {
                 filters: filter,
-                enablePostGet: true
+                enablePostGet: true,
+                pageSize: 2000,
+                limit: Infinity
             }
         });
     },
 
     _addPisBoard: function (filter, iterations) {
-        var boardDeferred = Ext.create('Deft.Deferred');
-        var boardArea = this.down('#board-area');
+        let boardDeferred = Ext.create('Deft.Deferred');
+        let boardArea = this.down('#board-area');
         boardArea.removeAll();
 
         this.buckets = {};
 
         // Create a column for each iteration shared by the projects
-        var endDateSorted = _.sortBy(iterations, function (i) {
+        let endDateSorted = _.sortBy(iterations, function (i) {
             return i.get('EndDate');
         });
-        var uniqueIterations = _.unique(endDateSorted, function (i) {
+        let uniqueIterations = _.unique(endDateSorted, function (i) {
             return this._getIterationKey(i);
         }, this);
 
-        var columns = _.map(uniqueIterations, function (iteration) {
-            var startDate = iteration.get('StartDate').toLocaleDateString();
-            var endDate = iteration.get('EndDate').toLocaleDateString();
-            var headerTemplate = new Ext.XTemplate('<div class="iteration-name">{name}</div><div class="iteration-dates">{start} - {end}</dev>').apply({
+        let columns = _.map(uniqueIterations, function (iteration) {
+            let startDate = iteration.get('StartDate').toLocaleDateString();
+            let endDate = iteration.get('EndDate').toLocaleDateString();
+            let headerTemplate = new Ext.XTemplate('<div class="iteration-name">{name}</div><div class="iteration-dates">{start} - {end}</dev>').apply({
                 name: iteration.get('Name'),
                 start: startDate,
                 end: endDate
@@ -580,6 +620,7 @@ Ext.define("release-tracking-with-filters", {
                     cls: 'cardboard-column-header'
                 },
                 fields: [this.lowestPiTypeName],
+                value: iteration.get('_ref'), // AM TODO, needed to add this, but will it affect dragging and dropping cards?
                 additionalFetchFields: Constants.STORIES_FETCH,
                 getStoreFilter: function () {
                     // Don't return this column 'value' as a filter
@@ -611,6 +652,7 @@ Ext.define("release-tracking-with-filters", {
 
         this.board = boardArea.add({
             xtype: 'rallycardboard',
+            itemId: 'releaseGridboard',
             type: ['HierarchicalRequirement'],
             attribute: 'Iteration',
             storeConfig: {
@@ -618,54 +660,61 @@ Ext.define("release-tracking-with-filters", {
                 fetch: [this.lowestPiTypeName].concat(Constants.STORIES_FETCH),
                 groupField: this.lowestPiTypeName,
                 context: this.currentDataContext,
-                enablePostGet: true
+                enablePostGet: true,
+                pageSize: 2000,
+                limit: Infinity
             },
             listeners: {
                 scope: this,
-                boxready: function () {
-                    boardDeferred.resolve();
+                load: function (board) {
+                    boardDeferred.resolve(board);
                 }
             },
             rowConfig: {
-                field: 'Project'
+                field: 'Project',
+                enableCrossRowDragging: false
             },
             columns: columns,
             cardConfig: {
                 xtype: 'storyfeaturecard',
                 lowestPiTypeName: this.lowestPiTypeName,
+                draggable: false,
                 isHiddenFunc: this._isCardHidden.bind(this),
                 getFeature: function (card) {
-                    var story = card.getRecord();
-                    var featureRef = story.get(this.lowestPiTypeName);
-                    var feature = this.piStore.getById(featureRef);
+                    let story = card.getRecord();
+                    let featureRef = story.get(this.lowestPiTypeName);
+                    let feature = this.piStore.getById(featureRef);
                     return feature;
                 }.bind(this),
                 getAllFeatureStories: function (card) {
-                    var cards = this._getCardsForCard(card);
+                    let cards = this._getCardsForCard(card);
                     return _.map(cards, function (card) {
                         return card.getRecord();
                     });
                 }.bind(this),
                 getVisibleCard: function (card) {
-                    var cards = this._getCardsForCard(card);
+                    let cards = this._getCardsForCard(card);
                     return cards[0];
                 }.bind(this),
                 listeners: {
                     scope: this,
                     fieldclick: function (fieldName, card) {
-                        if (fieldName === 'FeatureStoriesPredecessorsAndSuccessors' && this.getSetting('showDependencyLines')) {
-                            this.showStoryDependencyLines(card);
+                        if (fieldName === 'FeaturePredecessorsAndSuccessors' && this.getSetting('ReleaseTrackingWithFilters.dependencyLines') === 'showSingleDependency') {
+                            // Show feature to feature dependencies?
+                        }
+                        if (fieldName === 'FeatureStoriesPredecessorsAndSuccessors' && this.getSetting('ReleaseTrackingWithFilters.dependencyLines') === 'showSingleDependency') {
+                            this.showStoryDependencyLinesForCard(card);
                         }
                     },
                     story: function (card) {
                         // TODO (tj) move into StoryFeatureCard
-                        var story = card.getRecord();
-                        var featureRef = story.get(this.lowestPiTypeName);
-                        var feature = this.piStore.getById(featureRef);
-                        var context = this.getContext().getDataContext();
+                        let story = card.getRecord();
+                        let featureRef = story.get(this.lowestPiTypeName);
+                        let feature = this.piStore.getById(featureRef);
+                        let context = this.getContext().getDataContext();
                         context.project = story.get('Project')._ref;
-                        var iteration = story.get('Iteration');
-                        var filters = [];
+                        let iteration = story.get('Iteration');
+                        let filters = [];
                         if (iteration) {
                             filters = [{
                                 property: 'Iteration.Name',
@@ -711,182 +760,332 @@ Ext.define("release-tracking-with-filters", {
         return boardDeferred.promise;
     },
 
-    showStoryDependencyLines: function (clickedCard) {
-        var clickedCardX = clickedCard.getX();
-        var clickedCardY = clickedCard.getY();
-        var cardWidth = clickedCard.getWidth();
-        var cardHeight = clickedCard.getHeight();
-        var successorPointOffset = {
-            x: cardWidth, // right edge
-            y: cardHeight / 2 // middle
-        };
-        var predecessorPointOffset = {
-            x: 0, // left edge
-            y: cardHeight / 2 // middle
-        };
+    showAllStoryDependencyLines: function (board) {
+        let def = Ext.create('Deft.Deferred');
 
-        var boardArea = this.down('#board-area');
-        if (this.drawComponent) {
-            boardArea.remove(this.drawComponent);
-        }
+        this.removeDependencyLines();
 
-        // TODO (tj) Clean up need to get scroll from right-area. Would be better from board-area
-        var rightAreaEl = this.down('#right-area').getEl();
-        var rightAreaScroll = rightAreaEl.getScroll();
+        this.getAllStoryPredecessors(board).then({
+            scope: this,
+            success: function (storyPredObjArray) {
+                if (storyPredObjArray.length) {
+                    let lines = [];
 
+                    _.each(storyPredObjArray, function (storyPredObj) {
+                        let successorCard = storyPredObj.card.getVisibleCard(storyPredObj.card);
 
-        var items = [];
+                        _.each(storyPredObj.predecessors, function (pred) {
+                            let key = this._getRecordBucketKey(pred);
 
-        var xOffset = -boardArea.getX() + boardArea.getEl().getMargin().left;
-        var yOffset = 0 + rightAreaScroll.top; //-boardArea.getY() - boardArea.getEl().getMargin().top;
-        /*
-        var xOffset = 0 //-boardArea.getEl().getMargin().left;
-        var yOffset = 0 //-boardArea.getEl().getMargin().top;
-        */
+                            if (this.buckets.hasOwnProperty(key)) {
+                                let predecessorCard = this.buckets[key][0];
+
+                                // Skip self-dependencies
+                                if (predecessorCard === successorCard) {
+                                    return;
+                                }
+
+                                lines = lines.concat(this.generateDependencyLine(predecessorCard, successorCard));
+                            }
+                        }, this);
+                    }, this);
+
+                    this.drawDependencies(lines);
+                }
+
+                this.setLoading(false);
+                def.resolve();
+            },
+            failure: function () {
+                Rally.ui.notify.Notifier.showError({ message: 'Failed to add dependency lines for user stories' });
+                this.setLoading(false);
+                def.resolve();
+            }
+        });
+
+        return def.promise;
+    },
+
+    showStoryDependencyLinesForCard: function (clickedCard) {
+        let items = [];
+        this.removeDependencyLines();
+
         // Get list of all cards for this card (1 for each story for this feature + iteration + project)
-        var cards = this._getCardsForCard(clickedCard);
+        let cards = this._getCardsForCard(clickedCard);
 
-        // For each card, get its story dependencies
-        var promises = _.map(cards, function (item) {
-            var story = item.getRecord();
-            var predecessorsPromise = story.getCollection('Predecessors', {
-                fetch: [this.lowestPiTypeName].concat(Constants.STORIES_FETCH),
-            }).load().then({
+        let promises = _.map(cards, function (item) {
+            let story = item.getRecord();
+
+            let promise = this.getPredecessorsAndSuccessors(story).then({
                 scope: this,
-                success: function (predecessors) {
-                    // Draw a line to the card representing this stories feature card
-                    _.each(predecessors, function (predecessor) {
-                        var key = this._getRecordBucketKey(predecessor);
+                success: function (predecessorsSuccessors) {
+                    _.each(predecessorsSuccessors[0], function (predecessor) {
+                        let key = this._getRecordBucketKey(predecessor);
                         if (this.buckets.hasOwnProperty(key)) {
-                            var visibleCard = this.buckets[key][0];
+                            let visibleCard = this.buckets[key][0];
+
                             // Skip self-dependencies
                             if (visibleCard === clickedCard) {
                                 return;
                             }
 
-                            var p = { x: clickedCardX, y: clickedCardY };
-                            var p2 = { x: visibleCard.getX(), y: visibleCard.getY() };
-                            items.push({
-                                type: "circle",
-                                fill: 'blue',
-                                radius: 5,
-                                x: p.x + xOffset + predecessorPointOffset.x,
-                                y: p.y + yOffset + predecessorPointOffset.y
-
-                            });
-                            items.push({
-                                type: "circle",
-                                fill: 'blue',
-                                radius: 5,
-                                x: p2.x + xOffset + successorPointOffset.x,
-                                y: p2.y + yOffset + successorPointOffset.y
-
-                            });
-                            items.push({
-                                type: "path",
-                                path: Ext.String.format("M{0} {1} L {2} {3}",
-                                    p.x + xOffset + predecessorPointOffset.x,
-                                    p.y + yOffset + predecessorPointOffset.y,
-                                    p2.x + xOffset + successorPointOffset.x,
-                                    p2.y + yOffset + successorPointOffset.y
-                                ),
-                                fill: "transparent",
-                                stroke: "blue",
-                                "stroke-width": "1"
-                            });
+                            items = items.concat(this.generateDependencyLine(visibleCard, clickedCard));
                         }
                     }, this);
-                }
-            });
-            var successorsPromise = story.getCollection('Successors', {
-                fetch: [this.lowestPiTypeName].concat(Constants.STORIES_FETCH),
-            }).load().then({
-                scope: this,
-                success: function (successors) {
-                    _.each(successors, function (predecessor) {
-                        var key = this._getRecordBucketKey(predecessor);
+
+                    _.each(predecessorsSuccessors[1], function (successor) {
+                        let key = this._getRecordBucketKey(successor);
                         if (this.buckets.hasOwnProperty(key)) {
-                            var visibleCard = this.buckets[key][0];
+                            let visibleCard = this.buckets[key][0];
+
                             // Skip self-dependencies
                             if (visibleCard === clickedCard) {
                                 return;
                             }
 
-                            var p = { x: clickedCardX, y: clickedCardY };
-                            var p2 = { x: visibleCard.getX(), y: visibleCard.getY() };
-                            items.push({
-                                type: "circle",
-                                fill: 'blue',
-                                radius: 5,
-                                x: p.x + xOffset + successorPointOffset.x,
-                                y: p.y + yOffset + successorPointOffset.y
-
-                            });
-                            items.push({
-                                type: "circle",
-                                fill: 'blue',
-                                radius: 5,
-                                x: p2.x + xOffset + predecessorPointOffset.x,
-                                y: p2.y + yOffset + predecessorPointOffset.y
-
-                            });
-                            items.push({
-                                type: "path",
-                                path: Ext.String.format("M{0} {1} L {2} {3}",
-                                    p.x + xOffset + successorPointOffset.x,
-                                    p.y + yOffset + successorPointOffset.y,
-                                    p2.x + xOffset + predecessorPointOffset.x,
-                                    p2.y + yOffset + predecessorPointOffset.y
-                                ),
-                                fill: "transparent",
-                                stroke: "green",
-                                "stroke-width": "1"
-                            });
+                            items = items.concat(this.generateDependencyLine(clickedCard, visibleCard));
                         }
                     }, this);
                 }
             });
 
-            return Deft.promise.Promise.all([predecessorsPromise, successorsPromise]);
+            return promise;
         }, this);
 
         Deft.promise.Promise.all(promises).then({
             scope: this,
             success: function () {
-                var boardX = 0; //boardArea.getX(),
-                var boardY = 0; //boardArea.getY()
-                this.drawComponent = Ext.create('Ext.draw.Component', {
-                    style: Ext.String.format('position:absolute; top:{0}px; left:{1}px;z-index:1000;pointer-events:none', boardY, boardX),
-                    itemId: 'dependencies',
-                    id: 'dep',
-                    viewBox: false,
-                    floating: false,
-                    //margin: 10,
-                    height: boardArea.getHeight(),
-                    width: boardArea.getWidth(),
-                    items: items
-                });
-
-                boardArea.add(this.drawComponent);
-                this.drawComponent.show();
+                this.drawDependencies(items);
             }
         });
     },
 
+    generateDependencyLine: function (predecessorCard, successorCard) {
+        // If a project swimlane is collapsed, the card isn't hidden, but it's coordinates will be 0,0
+        if (!predecessorCard.getY() || !successorCard.getY()) {
+            return [];
+        }
+
+        let items = [];
+        let angle = 0;
+        let stroke = "grey"; // "#D1D1D1";
+        let circleRadius = 3;
+        let cardHeight = predecessorCard.getHeight();
+        let cardWidth = predecessorCard.getWidth();
+        let predX = predecessorCard.getX();
+        let predY = predecessorCard.getY();
+        let succX = successorCard.getX();
+        let succY = successorCard.getY();
+        let rightAreaEl = this.down('#right-area').getEl();
+        let rightAreaScroll = rightAreaEl.getScroll();
+        let boardArea = this.down('#board-area');
+
+        // Yellow line if the dependencies are in the same iteration
+        if (predX === succX) {
+            stroke = "#FAD200";
+        }
+        // Red line if:
+        //     - The predecessor is scheduled for an iteration after the successor's scheduled iteration
+        //     OR
+        //     - The successor is scheduled for an iteration but the predecessor is not
+        else if ((predX > succX) || (!predecessorCard.record.get('Iteration') && successorCard.record.get('Iteration'))) {
+            stroke = "#F66349";
+        }
+
+        let xOffset = -boardArea.getX() + boardArea.getEl().getMargin().left;
+        let yOffset = -rightAreaEl.getY() + rightAreaScroll.top;
+
+        if (predY === succY) {
+            predY += cardHeight / 2 + yOffset;
+            succY += cardHeight / 2 + yOffset;
+        }
+        else if (predY > succY) {
+            succY += cardHeight + yOffset;
+            predY += yOffset;
+            angle = -60;
+        }
+        else {
+            predY += cardHeight + yOffset;
+            succY += yOffset;
+            angle = 60;
+        }
+
+        predX += cardWidth + circleRadius + xOffset;
+        succX += xOffset - circleRadius;
+
+        // Half Circle
+        // items.push({
+        //     type: "path",
+        //     path: Ext.String.format("M{0} {1} A{2},{2} 0 0,0,{0},0",
+        //         p.x, p.y, circleRadius
+        //     ),
+        //     fill: 'grey'
+        // });
+
+        // Dashed line connecting dependencies
+        items.push({
+            type: "path",
+            path: Ext.String.format("M{0} {1} L {2} {3}",
+                predX, predY, succX, succY,
+            ),
+            fill: "transparent",
+            stroke,
+            "stroke-width": "1",
+            "stroke-dasharray": "3",
+        });
+
+        // Circle from predecessor
+        items.push({
+            type: "circle",
+            stroke,
+            fill: "#f6f6f6",
+            "stroke-width": "2",
+            radius: circleRadius,
+            x: predX,
+            y: predY
+        });
+
+        // Arrow pointing to successor
+
+        let arrow = Ext.create('Ext.draw.Sprite', {
+            type: "path",
+            fill: '#f6f6f6',
+            stroke,
+            "stroke-width": "2",
+            transformText: Ext.String.format("rotate(35 {0} {1})",
+                succX, succY
+            ),
+            path: Ext.String.format("M {0} {1} L {2} {3} L {4} {5} z",
+                succX,
+                succY - circleRadius,
+                succX + (circleRadius * 2),
+                succY,
+                succX,
+                succY + circleRadius,
+            )
+        });
+
+        // let angle = Math.atan2(predY - succY, predX - succX) * 180 / Math.PI;
+        // if (angle < 0) {
+        //     angle += 360;
+        // }
+        arrow.setAttributes({
+            rotate: {
+                degrees: angle
+            }
+        }, false);
+
+        items.push(arrow);
+
+        return items;
+    },
+
+    getAllStoryPredecessors: function (board) {
+        let def = Ext.create('Deft.Deferred');
+        let cards = board.getCards();
+
+        if (cards.length) {
+            let promises = [];
+
+            for (let card of cards) {
+                let storyCards = this._getCardsForCard(card);
+
+                _.each(storyCards, function (item) {
+                    let story = item.getRecord();
+
+                    if (story.get('Predecessors').Count) {
+                        promises.push(this.getPredecessorsForRecord(story, [this.lowestPiTypeName].concat(Constants.STORIES_FETCH)).then({
+                            success: function (predecessors) {
+                                return { card: item, predecessors };
+                            }
+                        }));
+                    }
+                }, this);
+            }
+
+            if (!promises.length) {
+                def.resolve([]);
+            }
+
+            Deft.promise.Promise.all(promises).then({
+                scope: this,
+                success: function (preds) {
+                    // let results = _.flatten(preds);
+                    def.resolve(preds);
+                },
+                failure: function (e) {
+                    console.log(e);
+                    def.reject();
+                }
+            });
+        }
+        else {
+            def.resolve([]);
+        }
+
+        return def.promise;
+    },
+
+    getPredecessorsForRecord: function (record, fetch) {
+        return record.getCollection('Predecessors', { fetch }).load().then({
+            scope: this,
+            success: function (predecessors) {
+                return predecessors;
+            }
+        });
+    },
+
+    getSuccessorsForRecord: function (record, fetch) {
+        return record.getCollection('Successors', { fetch }).load().then({
+            scope: this,
+            success: function (successors) {
+                return successors;
+            }
+        });
+    },
+
+    getPredecessorsAndSuccessors: function (record) {
+        let fetch = [this.lowestPiTypeName].concat(Constants.STORIES_FETCH);
+
+        let predecessorsPromise = this.getPredecessorsForRecord(record, fetch);
+        let successorsPromise = this.getSuccessorsForRecord(record, fetch);
+
+        return Deft.promise.Promise.all([predecessorsPromise, successorsPromise]);
+    },
+
+    drawDependencies: function (items) {
+        let boardArea = this.down('#board-area');
+        let gridboard = this.down('#releaseGridboard');
+
+        this.drawComponent = Ext.create('Ext.draw.Component', {
+            style: Ext.String.format('position:absolute; top:{0}px; left:{1}px;z-index:1000;pointer-events:none', 0, 0),
+            itemId: 'dependencies',
+            id: 'dep',
+            viewBox: false,
+            floating: false,
+            height: gridboard.getHeight(),
+            width: gridboard.getWidth() + 40,
+            items: items
+        });
+
+        boardArea.add(this.drawComponent);
+        this.drawComponent.show();
+    },
+
     _getCardBucketKey: function (card) {
-        var record = card.getRecord();
+        let record = card.getRecord();
         return this._getRecordBucketKey(record);
     },
 
     _getRecordBucketKey: function (record) {
-        var iterationKey = this._getIterationKey(record.get('Iteration'));
-        var projectId = record.get('Project').ObjectID;
-        var featureId = record.get('Feature').ObjectID;
+        let iterationKey = this._getIterationKey(record.get('Iteration'));
+        let projectId = record.get('Project').ObjectID;
+        let featureId = record.get('Feature').ObjectID;
         return [featureId, projectId, iterationKey].join('-');
     },
 
     _getIterationKey: function (iteration) {
-        var result = '';
+        let result = '';
         if (iteration) {
             if (iteration.get) {
                 result = iteration.get('Name') + iteration.get('StartDate').toISOString() + iteration.get('EndDate').toISOString();
@@ -900,8 +1099,8 @@ Ext.define("release-tracking-with-filters", {
 
 
     _isCardHidden: function (card) {
-        var result = false;
-        var key = this._getCardBucketKey(card);
+        let result = false;
+        let key = this._getCardBucketKey(card);
         if (this.buckets.hasOwnProperty(key)) {
             this.buckets[key].push(card);
             result = true;
@@ -913,14 +1112,10 @@ Ext.define("release-tracking-with-filters", {
     },
 
     _getCardsForCard: function (card) {
-        var key = this._getCardBucketKey(card);
-        var result = this.buckets[key];
+        let key = this._getCardBucketKey(card);
+        let result = this.buckets[key];
 
         return result;
-    },
-
-    viewChange: function () {
-        this._buildGridStore();
     },
 
     getModelScopedStateId: function (modelName, id) {
@@ -928,16 +1123,80 @@ Ext.define("release-tracking-with-filters", {
     },
 
     getSettingsFields: function () {
-        return [{
-            xtype: 'rallycheckboxfield',
-            name: 'showDependencyLines',
-            fieldLabel: '(Experimental) Show Story Dependency Lines'
-        }];
+        let currentSettings = Rally.getApp().getSettings();
+        // if (!currentSettings.hasOwnProperty('ReleaseTrackingWithFilters.dependencyLines')) {
+        //     currentSettings['ReleaseTrackingWithFilters.dependencyLines'] = 'noDependencyLines';
+        // }
+
+        return [
+            {
+                xtype: 'radiogroup',
+                fieldLabel: 'Dependencies',
+                columns: 1,
+                vertical: true,
+                allowBlank: false,
+                items: [{
+                    boxLabel: "Don't show",
+                    name: 'ReleaseTrackingWithFilters.dependencyLines',
+                    inputValue: 'noDependencyLines',
+                    checked: 'noDependencyLines' === currentSettings['ReleaseTrackingWithFilters.dependencyLines']
+                }, {
+                    boxLabel: "Show single dependency upon clicking a card",
+                    name: 'ReleaseTrackingWithFilters.dependencyLines',
+                    inputValue: 'showSingleDependency',
+                    checked: 'showSingleDependency' === currentSettings['ReleaseTrackingWithFilters.dependencyLines']
+                }, {
+                    boxLabel: 'Show all story dependencies',
+                    name: 'ReleaseTrackingWithFilters.dependencyLines',
+                    inputValue: 'showDependencyLines',
+                    checked: 'showDependencyLines' === currentSettings['ReleaseTrackingWithFilters.dependencyLines']
+                },],
+                // listeners: {
+                //     scope: this,
+                //     change: function () {
+                //         return;
+                //     }
+                // }
+            }
+        ];
     },
 
     searchAllProjects: function () {
         return this.ancestorFilterPlugin.getIgnoreProjectScope();
         // return this.scopeControlPlugin.getValue();
+    },
+
+    onCardboardResize: function () {
+        let board = this.down('#releaseGridboard');
+
+        if (board) {
+            if (this.getSetting('ReleaseTrackingWithFilters.dependencyLines') === 'showDependencyLines') {
+                // let rightArea = this.down('#right-area');
+                this.removeDependencyLines();
+
+                // With many dependencies drawn, the loading mask doesn't properly display
+                // and it looks like the app freezes... Not an ideal user experience.
+                // A timeout helps everything render properly before redrawing the dependencies
+                setTimeout(() => {
+                    this.setLoading('Redrawing Dependencies');
+                    this.showAllStoryDependencyLines(board).then({
+                        scope: this,
+                        success: function () {
+                            this.setLoading(false);
+                        }
+                    });
+                }, 500);
+            }
+            else if (this.getSetting('ReleaseTrackingWithFilters.dependencyLines') === 'showSingleDependency') {
+                this.removeDependencyLines();
+            }
+        }
+    },
+
+    removeDependencyLines: function () {
+        if (this.drawComponent) {
+            this.down('#board-area').remove(this.drawComponent);
+        }
     },
 
     onTimeboxScopeChange: function (newTimeboxScope) {
@@ -972,11 +1231,11 @@ Ext.define("release-tracking-with-filters", {
     },
 
     _updateDateControls: function () {
-        var startDatePicker = this.down('#start-date-picker');
+        let startDatePicker = this.down('#start-date-picker');
         startDatePicker.suspendEvents();
         startDatePicker.setValue(this.timeboxStart);
         startDatePicker.resumeEvents();
-        var endDatePicker = this.down('#end-date-picker');
+        let endDatePicker = this.down('#end-date-picker');
         endDatePicker.suspendEvents();
         endDatePicker.setValue(this.timeboxEnd);
         endDatePicker.resumeEvents();

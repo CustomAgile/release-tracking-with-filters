@@ -5,7 +5,7 @@ Ext.define('StoryFeatureCard', {
     hidden: false,
     lowestPiTypeName: 'Feature',
 
-    initComponent: function() {
+    initComponent: function () {
         this.hidden = this.isHiddenFunc(this);
         this.callParent(arguments);
         this.feature = this.record.get(this.lowestPiTypeName);
@@ -14,13 +14,13 @@ Ext.define('StoryFeatureCard', {
         }
     },
 
-    setupPlugins: function() {
+    setupPlugins: function () {
         return [
             { ptype: 'rallycardpopover' },
         ];
     },
 
-    reRender: function(highlight) {
+    reRender: function (highlight) {
         // Convert reRender calls into a re-render of the primary feature card
         if (this.hidden) {
             var primaryCard = this.getVisibleCard(this);
@@ -28,31 +28,31 @@ Ext.define('StoryFeatureCard', {
             primaryCard._onReady(primaryCard);
         }
         else {
-            this.callParent(arguments)
+            this.callParent(arguments);
             this._onReady(this);
         }
     },
 
-    _onReady: function(card) {
+    _onReady: function (card) {
         var stories = this.getAllFeatureStories(this);
         this.storyCount = stories.length;
         this.acceptedStoryCount = 0;
         this.storiesHaveDependencies = false;
-        _.each(stories, function(story) {
+        _.each(stories, function (story) {
             if (story.get('AcceptedDate')) {
-                this.acceptedStoryCount = this.acceptedStoryCount + 1
+                this.acceptedStoryCount = this.acceptedStoryCount + 1;
             }
 
-            var predSuc = story.get('PredecessorsAndSuccessors')
+            var predSuc = story.get('PredecessorsAndSuccessors');
             if (predSuc && predSuc.Count) {
-                this.storiesHaveDependencies = true
+                this.storiesHaveDependencies = true;
             }
         }, this);
         this.update(this._buildFinalHtml());
         this._addFinalListeners();
     },
 
-    _getFeatureColor: function() {
+    _getFeatureColor: function () {
         var artifactColorDiv = {
             tag: 'div',
             cls: 'ts-artifact-color'
@@ -65,11 +65,11 @@ Ext.define('StoryFeatureCard', {
         return Ext.DomHelper.createHtml(artifactColorDiv);
     },
 
-    _buildHtml: function() {
+    _buildHtml: function () {
         return this._buildInitialHtml();
     },
 
-    _buildInitialHtml: function() {
+    _buildInitialHtml: function () {
         var record = this.getRecord();
         var html = [];
         html.push('<div class="ts-card-table-ct"><table class="ts-card-table"><tr>');
@@ -79,7 +79,7 @@ Ext.define('StoryFeatureCard', {
         return html.join('\n');
     },
 
-    _buildFinalHtml: function(stories) {
+    _buildFinalHtml: function (stories) {
         var record = this.getRecord();
         var feature = record.get(this.lowestPiTypeName);
         var html = [];
@@ -102,17 +102,17 @@ Ext.define('StoryFeatureCard', {
         return html.join('\n');
     },
 
-    _addFinalListeners: function() {
+    _addFinalListeners: function () {
         var el = this.getEl();
         var table = el.down('.ts-card-table')
         if (table) {
-            table.on('click', function(event, target, options) {
+            table.on('click', function (event, target, options) {
                 this.fireEvent('story', this);
             }, this);
         }
         var predSucIcon = el.down('.FeatureStoriesPredecessorsAndSuccessors');
         if (predSucIcon) {
-            predSucIcon.on('click', function(event, target, options) {
+            predSucIcon.on('click', function (event, target, options) {
                 this.fireEvent('fieldclick', 'FeatureStoriesPredecessorsAndSuccessors', this);
                 return false;
             }, this, {
@@ -122,7 +122,7 @@ Ext.define('StoryFeatureCard', {
         }
         var featurePredSucIcon = el.down('.FeaturePredecessorsAndSuccessors');
         if (featurePredSucIcon) {
-            featurePredSucIcon.on('click', function() {
+            featurePredSucIcon.on('click', function () {
                 this.fireEvent('fieldclick', 'FeaturePredecessorsAndSuccessors', this);
                 return false;
             }, this, {
