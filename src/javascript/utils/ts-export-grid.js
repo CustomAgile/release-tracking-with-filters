@@ -2,7 +2,7 @@ Ext.define('TsExportGrid', {
 
     extend: 'Ext.Component',
 
-    getExportMenuItems: function() {
+    getExportMenuItems: function () {
         var result = [];
         var models = [this.model];
         result = [{
@@ -30,11 +30,11 @@ Ext.define('TsExportGrid', {
         return result;
     },
 
-    _getGrid: function() {
+    _getGrid: function () {
         return Rally.getApp().down('#' + this.gridId);
     },
 
-    _export: function(args) {
+    _export: function (args) {
         var columns = this._getExportColumns(),
             fetch = this._getExportFetch(),
             filters = this._getExportFilters(),
@@ -68,22 +68,43 @@ Ext.define('TsExportGrid', {
         hierarchyLoader.on('hierarchyloaderror', this._showError, this)
         hierarchyLoader.load();
     },
-    _getExportColumns: function() {
+    _getExportColumns: function () {
         var grid = this._getGrid();
         if (grid) {
-            return _.filter(grid.getGridOrBoard().columns, function(item) {
-                return (
-                    item.dataIndex &&
+            let filteredColumns = [];
+
+            _.each(grid.getGridOrBoard().columns, function (item) {
+                // PredecessorsAndSuccessors column is generated via a template, not from
+                // a specific WSAPI attribute. For exporting this data we have to split
+                // this column back into 2 separate columns/data points
+                if (item.dataIndex === 'PredecessorsAndSuccessors') {
+                    let predCol = Ext.create('Rally.ui.grid.FieldColumn', {
+                        dataIndex: 'Predecessors',
+                        text: 'Predecessors'
+                    });
+
+                    let succCol = Ext.create('Rally.ui.grid.FieldColumn', {
+                        dataIndex: 'Successors',
+                        text: 'Successors'
+                    });
+
+                    filteredColumns.push(predCol);
+                    filteredColumns.push(succCol);
+                }
+                else if (item.dataIndex &&
                     item.dataIndex != "DragAndDropRank" &&
                     item.xtype &&
                     item.xtype != "rallytreerankdraghandlecolumn" &&
                     item.xtype != "rallyrowactioncolumn" &&
-                    item.text != "&#160;");
+                    item.text != "&#160;") {
+                    filteredColumns.push(item);
+                }
             });
+
+            return filteredColumns;
         }
-        return [];
     },
-    _getExportFilters: function() {
+    _getExportFilters: function () {
         var grid = this._getGrid(),
             filters = [],
             query = Rally.getApp().getSetting('query');
@@ -104,24 +125,25 @@ Ext.define('TsExportGrid', {
 
         return filters;
     },
-    _getExportFetch: function() {
+    _getExportFetch: function () {
         var fetch = _.pluck(this._getExportColumns(), 'dataIndex');
         if (Ext.Array.contains(fetch, 'TaskActualTotal')) {
             fetch.push('Actuals');
         }
+
         return fetch;
     },
-    _getExportSorters: function() {
+    _getExportSorters: function () {
         var grid = this._getGrid();
         if (grid) {
             return grid.getGridOrBoard().getStore().getSorters();
         }
     },
 
-    _showError: function(msg) {
+    _showError: function (msg) {
         Rally.ui.notify.Notifier.showError({ message: msg });
     },
-    _showStatus: function(message) {
+    _showStatus: function (message) {
         if (message) {
             Rally.ui.notify.Notifier.showStatus({
                 message: message,

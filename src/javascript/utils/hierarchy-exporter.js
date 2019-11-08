@@ -6,7 +6,7 @@ Ext.define('Rally.technicalservices.HierarchyExporter', {
 
     records: undefined,
 
-    constructor: function(config) {
+    constructor: function (config) {
         this.mixins.observable.constructor.call(this, config);
         this.modelName = config.modelName;
         this.records = [];
@@ -14,10 +14,10 @@ Ext.define('Rally.technicalservices.HierarchyExporter', {
         this.columns = config.columns || [{ dataIndex: 'FormattedID', text: 'ID' }, { dataIndex: 'Name', text: 'Name' }];
         this.portfolioItemTypeObjects = config.portfolioItemTypeObjects || [];
     },
-    setRecords: function(type, records) {
+    setRecords: function (type, records) {
         this.records = (this.records || []).concat(records);
     },
-    export: function() {
+    export: function () {
 
         this.fireEvent('exportupdate', "Preparing export data");
 
@@ -38,10 +38,10 @@ Ext.define('Rally.technicalservices.HierarchyExporter', {
         this.fireEvent('exportcomplete');
 
     },
-    _buildHierarchy: function() {
+    _buildHierarchy: function () {
         var rootItems = [];
 
-        var objectHash = _.reduce(this.records, function(objHash, record) {
+        var objectHash = _.reduce(this.records, function (objHash, record) {
             var oid = record.get('ObjectID');
             objHash[oid] = record.getData();
             objHash[oid].loadedChildren = [];
@@ -59,10 +59,10 @@ Ext.define('Rally.technicalservices.HierarchyExporter', {
              */
             var obj = objectHash[key],
                 parent = obj.Parent && obj.Parent.ObjectID ||
-                obj.PortfolioItem && obj.PortfolioItem.ObjectID ||
-                obj.WorkProduct && obj.WorkProduct.ObjectID ||
-                obj.Requirement && obj.Requirement.ObjectID ||
-                obj.TestCase && obj.TestCase.ObjectID;
+                    obj.PortfolioItem && obj.PortfolioItem.ObjectID ||
+                    obj.WorkProduct && obj.WorkProduct.ObjectID ||
+                    obj.Requirement && obj.Requirement.ObjectID ||
+                    obj.TestCase && obj.TestCase.ObjectID;
 
             //   if (obj._type === 'task') { console.log('obj',parent, obj._type, obj)};
             if (parent && objectHash[parent]) {
@@ -80,7 +80,7 @@ Ext.define('Rally.technicalservices.HierarchyExporter', {
         }
         return rootItems;
     },
-    _transformDataToDelimitedString: function(data, columns) {
+    _transformDataToDelimitedString: function (data, columns) {
         var csvArray = [],
             delimiter = ",",
             rowDelimiter = "\r\n",
@@ -88,16 +88,16 @@ Ext.define('Rally.technicalservices.HierarchyExporter', {
             reHTML = new RegExp('<\/?[^>]+>', 'g'),
             reNbsp = new RegExp('&nbsp;', 'ig');
 
-        var column_keys = _.map(columns, function(c) { return c.dataIndex; }),
+        var column_keys = _.map(columns, function (c) { return c.dataIndex; }),
             column_headers = _.pluck(columns, 'text');
 
         csvArray.push(column_headers.join(delimiter));
 
-        Ext.Array.each(data, function(obj) {
+        Ext.Array.each(data, function (obj) {
             var data = [];
-            Ext.Array.each(column_keys, function(key) {
+            Ext.Array.each(column_keys, function (key) {
                 var val = obj[key];
-                //console.log('column-key', key, obj);
+
                 if (key === "Parent") {
                     val = obj[key] || obj['PortfolioItem'];
                 }
@@ -134,11 +134,11 @@ Ext.define('Rally.technicalservices.HierarchyExporter', {
      * @returns {Array}
      * @private
      */
-    _getExportableHierarchicalData: function(hierarchyData, columns) {
+    _getExportableHierarchicalData: function (hierarchyData, columns) {
 
         var exportData = [];
 
-        _.each(hierarchyData, function(r) {
+        _.each(hierarchyData, function (r) {
             var ancestors = {};
             var rec = this._getExportDataRow(r, columns, ancestors);
             exportData.push(rec);
@@ -147,7 +147,7 @@ Ext.define('Rally.technicalservices.HierarchyExporter', {
 
         return exportData;
     },
-    _addExportChildren: function(record, exportData, columns, ancestors) {
+    _addExportChildren: function (record, exportData, columns, ancestors) {
         var new_ancestors = Ext.clone(ancestors),
             me = this;
 
@@ -157,7 +157,7 @@ Ext.define('Rally.technicalservices.HierarchyExporter', {
 
         var children = record.loadedChildren;
         if (children && children.length > 0) {
-            _.each(children, function(c) {
+            _.each(children, function (c) {
                 var row = this._getExportDataRow(c, columns, new_ancestors);
                 // if this is a descendant of a story, set the field that
                 // represents the User Story column to be the first level
@@ -173,7 +173,7 @@ Ext.define('Rally.technicalservices.HierarchyExporter', {
 
         return;
     },
-    getTypePathDisplayName: function(modelName) {
+    getTypePathDisplayName: function (modelName) {
         if (modelName.toLowerCase() === 'hierarchicalrequirement') {
             return 'User Story';
         }
@@ -188,7 +188,7 @@ Ext.define('Rally.technicalservices.HierarchyExporter', {
         }
 
         var displayName = '';
-        Ext.Array.each(this.portfolioItemTypeObjects, function(p) {
+        Ext.Array.each(this.portfolioItemTypeObjects, function (p) {
             if (p.get('TypePath').toLowerCase() === modelName.toLowerCase()) {
                 displayName = p.get('Name');
                 return false;
@@ -196,7 +196,7 @@ Ext.define('Rally.technicalservices.HierarchyExporter', {
         });
         return displayName;
     },
-    _getExportDataRow: function(recData, columns, ancestors) {
+    _getExportDataRow: function (recData, columns, ancestors) {
         var rec = Ext.clone(ancestors),
             type = recData._type; //obj.getData('type');
 
@@ -204,12 +204,15 @@ Ext.define('Rally.technicalservices.HierarchyExporter', {
         rec.type = this.getTypePathDisplayName(recData._type);
         rec._type = recData._type;
 
-        _.each(columns, function(c) {
+        _.each(columns, function (c) {
             var field = c.dataIndex || null;
             if (field) {
                 var data = recData[field];
 
-                if (field === "Parent") {
+                if (field === "Predecessors" || field === "Successors") {
+                    data = recData[field].Count || 0;
+                }
+                else if (field === "Parent") {
                     data = recData[field] || recData["PortfolioItem"];
                 }
 
@@ -236,14 +239,14 @@ Ext.define('Rally.technicalservices.HierarchyExporter', {
 
         return rec;
     },
-    _getAncestorTypeColumns: function(rootModel) {
+    _getAncestorTypeColumns: function (rootModel) {
         var modelName = rootModel.toLowerCase();
         var columns = [];
         if (modelName == 'hierarchicalrequirement' || Ext.String.startsWith(modelName, 'portfolioitem')) {
             var piTypes = this.portfolioItemTypeObjects,
                 piIdx = -1;
 
-            Ext.Array.each(piTypes, function(piObj, idx) {
+            Ext.Array.each(piTypes, function (piObj, idx) {
                 if (piObj.get('TypePath').toLowerCase() === rootModel.toLowerCase()) {
                     piIdx = idx;
                 }
@@ -255,7 +258,7 @@ Ext.define('Rally.technicalservices.HierarchyExporter', {
             });
 
             if (piIdx >= 0) {
-                columns = columns.concat(Ext.Array.map(piTypes.slice(0, piIdx + 1), function(piObj) {
+                columns = columns.concat(Ext.Array.map(piTypes.slice(0, piIdx + 1), function (piObj) {
                     return {
                         dataIndex: piObj.get('TypePath').toLowerCase(),
                         text: piObj.get('Name')
@@ -271,13 +274,13 @@ Ext.define('Rally.technicalservices.HierarchyExporter', {
         }
         return columns;
     },
-    saveCSVToFile: function(csv, file_name, type_object) {
+    saveCSVToFile: function (csv, file_name, type_object) {
         if (type_object === undefined) {
             type_object = { type: 'text/csv;charset=utf-8' };
         }
         this.saveAs(csv, file_name, type_object);
     },
-    saveAs: function(textToWrite, fileName) {
+    saveAs: function (textToWrite, fileName) {
         if (Ext.isIE9m) {
             Rally.ui.notify.Notifier.showWarning({ message: "Export is not supported for IE9 and below." });
             return;
@@ -340,7 +343,7 @@ Ext.define('Rally.technicalservices.HierarchyExporter', {
         }
 
     },
-    createObjectURL: function(file) {
+    createObjectURL: function (file) {
         if (window.webkitURL) {
             return window.webkitURL.createObjectURL(file);
         }
@@ -351,7 +354,7 @@ Ext.define('Rally.technicalservices.HierarchyExporter', {
             return null;
         }
     },
-    destroyClickedElement: function(event) {
+    destroyClickedElement: function (event) {
         document.body.removeChild(event.target);
     }
 });
