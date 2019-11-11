@@ -90,6 +90,7 @@ Ext.define('StoryFeatureCard', {
         html.push('<td class="ts-card-content ts-card-icons">');
         if (this.storiesHaveDependencies) {
             html.push('<span class="field-content FeatureStoriesPredecessorsAndSuccessors icon-children"></span>');
+            html.push('<span class="field-content FeatureStoriesPredecessorsAndSuccessorsCancel icon-cancel"></span>');
         }
         var featurePred = feature.Predecessors;
         var featureSucc = feature.Successors;
@@ -129,6 +130,18 @@ Ext.define('StoryFeatureCard', {
                 card: this,
                 stopPropagation: true // Prevent stories popup from also showing
             });
+        }
+        var cancelIcon = el.down('.FeatureStoriesPredecessorsAndSuccessorsCancel');
+        if (cancelIcon) {
+            cancelIcon.on('click', function (event, target, options) {
+                this.fireEvent('fieldclick', 'FeatureStoriesPredecessorsAndSuccessorsCancel', this);
+                return false;
+            }, this, {
+                card: this,
+                stopPropagation: true // Prevent stories popup from also showing
+            });
+
+            cancelIcon.setStyle('display', 'none');
         }
     }
 });

@@ -42,9 +42,17 @@
     text-transform: uppercase;
 }
 
+.dependency-label {
+    margin-left: 20px;
+}
+
+.dependency-checkbox input {
+    margin-top: 1px;
+}
+
 .grid-area {
     background-color: rgb(244, 244, 244);
-    padding: 15px;
+    padding: 10px;
     border: rgb(213, 213, 213);
     border-width: thin;
     border-style: solid;
@@ -53,6 +61,15 @@
 
 .ts-panel-header {
     background-color: rgb(244, 244, 244);
+}
+
+.x-panel-header-collapsed {
+    background-color: rgb(244, 244, 244);
+    padding: 10px;
+    border: rgb(213, 213, 213);
+    border-width: thin;
+    border-style: solid;
+    border-radius: 4px;
 }
 
 .ts-panel-header .x-panel-header-text {

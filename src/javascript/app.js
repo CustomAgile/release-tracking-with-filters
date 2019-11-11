@@ -7,7 +7,7 @@ Ext.define("release-tracking-with-filters", {
         id: 'filter-area',
         region: 'north',
         xtype: 'panel',
-        minHeight: 280,
+        minHeight: 290,
         overflowY: 'auto',
         collapsible: true,
         margins: '0 0 10 0',
@@ -15,6 +15,7 @@ Ext.define("release-tracking-with-filters", {
             cls: 'ts-panel-header',
             padding: '0 0 15 0'
         },
+        cls: 'grid-area',
         title: 'FILTERS',
         flex: 1,
         layout: {
@@ -85,6 +86,7 @@ Ext.define("release-tracking-with-filters", {
             id: 'date-range-area',
             xtype: 'container',
             layout: 'hbox',
+            minWidth: 700,
             padding: '15 0 15 20',
         }, {
             id: 'board-area',
@@ -98,7 +100,7 @@ Ext.define("release-tracking-with-filters", {
     ],
     config: {
         defaultSettings: {
-            'ReleaseTrackingWithFilters.dependencyLines': 'noDependencyLines'
+            // 'ReleaseTrackingWithFilters.dependencyLines': 'noDependencyLines'
         },
     },
 
@@ -122,13 +124,6 @@ Ext.define("release-tracking-with-filters", {
             //     this.callParent(arguments);
             // }
         });
-
-        // Ext.override(Ext.container.Container, {
-        //     fireEvent: function (name) {
-        //         console.log(name);
-        //         this.callParent(arguments);
-        //     }
-        // });
 
         this.down('#right-area').on('resize', this.onCardboardResize, this);
 
@@ -161,6 +156,34 @@ Ext.define("release-tracking-with-filters", {
                 change: function (cmp, newValue) {
                     this.timeboxEnd = newValue;
                     this._update();
+                }
+            }
+        }, {
+            xtype: 'checkbox',
+            boxLabel: 'Show Story Dependencies',
+            boxLabelCls: 'date-label dependency-label',
+            labelWidth: 180,
+            width: 235,
+            name: 'dependencies',
+            inputValue: true,
+            itemId: 'storyDependencyCheckbox',
+            cls: 'dependency-checkbox',
+            margin: '0 10 0 20',
+            listeners: {
+                scope: this,
+                change: function (cmp, showLines) {
+                    if (this.previousCancelIcon) {
+                        this.previousDepIcon.setStyle('display', 'inline');
+                        this.previousCancelIcon.setStyle('display', 'none');
+                        this.previousDepIcon = null;
+                        this.previousCancelIcon = null;
+                    }
+
+                    this.removeDependencyLines();
+
+                    if (showLines) {
+                        this.showAllStoryDependencyLines();
+                    }
                 }
             }
         }]);
@@ -548,13 +571,13 @@ Ext.define("release-tracking-with-filters", {
         let boardPromise = this._addPisBoard(this.storiesFilter, this.currentIterations).then({
             scope: this,
             success: function (board) {
-                if (this.getSetting('ReleaseTrackingWithFilters.dependencyLines') === 'showDependencyLines') {
-                    // setTimeout(() => { this.showAllStoryDependencyLines(board); }, 5000);
-                    for (let def of board.rowDefinitions) {
-                        def.on('collapse', this.onCardboardResize, this);
-                        def.on('expand', this.onCardboardResize, this);
-                    }
-                    this.showAllStoryDependencyLines(board);
+                for (let def of board.rowDefinitions) {
+                    def.on('collapse', this.onCardboardResize, this);
+                    def.on('expand', this.onCardboardResize, this);
+                }
+
+                if (this._shouldShowStoryDependencies()) {
+                    this.showAllStoryDependencyLines();
                 }
                 else {
                     this.setLoading(false);
@@ -699,12 +722,45 @@ Ext.define("release-tracking-with-filters", {
                 listeners: {
                     scope: this,
                     fieldclick: function (fieldName, card) {
-                        if (fieldName === 'FeaturePredecessorsAndSuccessors' && this.getSetting('ReleaseTrackingWithFilters.dependencyLines') === 'showSingleDependency') {
+                        let depIcon = card.el.down('.FeatureStoriesPredecessorsAndSuccessors');
+                        let cancelIcon = card.el.down('.FeatureStoriesPredecessorsAndSuccessorsCancel');
+
+                        if (fieldName === 'FeaturePredecessorsAndSuccessors') {
                             // Show feature to feature dependencies?
                         }
-                        if (fieldName === 'FeatureStoriesPredecessorsAndSuccessors' && this.getSetting('ReleaseTrackingWithFilters.dependencyLines') === 'showSingleDependency') {
+                        else if (fieldName === 'FeatureStoriesPredecessorsAndSuccessors') {
+                            if (depIcon && cancelIcon) {
+                                depIcon.setStyle('display', 'none');
+                                cancelIcon.setStyle('display', 'inline');
+                            }
+
+                            if (this.previousDepIcon && this.previousDepIcon !== depIcon) {
+                                this.previousDepIcon.setStyle('display', 'inline');
+                                this.previousCancelIcon.setStyle('display', 'none');
+                            }
+
                             this.showStoryDependencyLinesForCard(card);
                         }
+                        else if (fieldName === 'FeatureStoriesPredecessorsAndSuccessorsCancel') {
+                            if (depIcon && cancelIcon) {
+                                depIcon.setStyle('display', 'inline');
+                                cancelIcon.setStyle('display', 'none');
+                            }
+
+                            if (this.previousDepIcon && this.previousDepIcon !== depIcon) {
+                                this.previousDepIcon.setStyle('display', 'inline');
+                                this.previousCancelIcon.setStyle('display', 'none');
+                            }
+
+                            if (this._shouldShowStoryDependencies()) {
+                                this.showAllStoryDependencyLines();
+                            }
+                            else {
+                                this.removeDependencyLines();
+                            }
+                        }
+                        this.previousDepIcon = depIcon;
+                        this.previousCancelIcon = cancelIcon;
                     },
                     story: function (card) {
                         // TODO (tj) move into StoryFeatureCard
@@ -760,48 +816,57 @@ Ext.define("release-tracking-with-filters", {
         return boardDeferred.promise;
     },
 
-    showAllStoryDependencyLines: function (board) {
+    showAllStoryDependencyLines: function () {
         let def = Ext.create('Deft.Deferred');
+        let board = this.down('#releaseGridboard');
 
-        this.removeDependencyLines();
+        if (board) {
+            this.removeDependencyLines();
 
-        this.getAllStoryPredecessors(board).then({
-            scope: this,
-            success: function (storyPredObjArray) {
-                if (storyPredObjArray.length) {
-                    let lines = [];
+            this.setLoading('Drawing Dependencies');
 
-                    _.each(storyPredObjArray, function (storyPredObj) {
-                        let successorCard = storyPredObj.card.getVisibleCard(storyPredObj.card);
+            this.getAllStoryPredecessors(board).then({
+                scope: this,
+                success: function (storyPredObjArray) {
+                    if (storyPredObjArray.length) {
+                        let lines = [];
 
-                        _.each(storyPredObj.predecessors, function (pred) {
-                            let key = this._getRecordBucketKey(pred);
+                        _.each(storyPredObjArray, function (storyPredObj) {
+                            let successorCard = storyPredObj.card.getVisibleCard(storyPredObj.card);
 
-                            if (this.buckets.hasOwnProperty(key)) {
-                                let predecessorCard = this.buckets[key][0];
+                            _.each(storyPredObj.predecessors, function (pred) {
+                                let key = this._getRecordBucketKey(pred);
 
-                                // Skip self-dependencies
-                                if (predecessorCard === successorCard) {
-                                    return;
+                                if (this.buckets.hasOwnProperty(key)) {
+                                    let predecessorCard = this.buckets[key][0];
+
+                                    // Skip self-dependencies
+                                    if (predecessorCard === successorCard) {
+                                        return;
+                                    }
+
+                                    lines = lines.concat(this.generateDependencyLine(predecessorCard, successorCard));
                                 }
-
-                                lines = lines.concat(this.generateDependencyLine(predecessorCard, successorCard));
-                            }
+                            }, this);
                         }, this);
-                    }, this);
 
-                    this.drawDependencies(lines);
+                        this.drawDependencies(lines);
+                    }
+
+                    this.setLoading(false);
+                    def.resolve();
+                },
+                failure: function () {
+                    Rally.ui.notify.Notifier.showError({ message: 'Failed to add dependency lines for user stories' });
+                    this.setLoading(false);
+                    def.resolve();
                 }
+            });
 
-                this.setLoading(false);
-                def.resolve();
-            },
-            failure: function () {
-                Rally.ui.notify.Notifier.showError({ message: 'Failed to add dependency lines for user stories' });
-                this.setLoading(false);
-                def.resolve();
-            }
-        });
+        }
+        else {
+            def.resolve();
+        }
 
         return def.promise;
     },
@@ -1027,7 +1092,9 @@ Ext.define("release-tracking-with-filters", {
     },
 
     getPredecessorsForRecord: function (record, fetch) {
-        return record.getCollection('Predecessors', { fetch }).load().then({
+        let filters = [{ property: 'Feature', operator: '!=', value: null }];
+
+        return record.getCollection('Predecessors', { fetch, filters }).load().then({
             scope: this,
             success: function (predecessors) {
                 return predecessors;
@@ -1036,7 +1103,9 @@ Ext.define("release-tracking-with-filters", {
     },
 
     getSuccessorsForRecord: function (record, fetch) {
-        return record.getCollection('Successors', { fetch }).load().then({
+        let filters = [{ property: 'Feature', operator: '!=', value: null }];
+
+        return record.getCollection('Successors', { fetch, filters }).load().then({
             scope: this,
             success: function (successors) {
                 return successors;
@@ -1123,41 +1192,45 @@ Ext.define("release-tracking-with-filters", {
     },
 
     getSettingsFields: function () {
-        let currentSettings = Rally.getApp().getSettings();
+        // let currentSettings = Rally.getApp().getSettings();
         // if (!currentSettings.hasOwnProperty('ReleaseTrackingWithFilters.dependencyLines')) {
         //     currentSettings['ReleaseTrackingWithFilters.dependencyLines'] = 'noDependencyLines';
         // }
 
+        // Need at least 1 setting in order to add multi-level filter settings
         return [
             {
-                xtype: 'radiogroup',
-                fieldLabel: 'Dependencies',
-                columns: 1,
-                vertical: true,
-                allowBlank: false,
-                items: [{
-                    boxLabel: "Don't show",
-                    name: 'ReleaseTrackingWithFilters.dependencyLines',
-                    inputValue: 'noDependencyLines',
-                    checked: 'noDependencyLines' === currentSettings['ReleaseTrackingWithFilters.dependencyLines']
-                }, {
-                    boxLabel: "Show single dependency upon clicking a card",
-                    name: 'ReleaseTrackingWithFilters.dependencyLines',
-                    inputValue: 'showSingleDependency',
-                    checked: 'showSingleDependency' === currentSettings['ReleaseTrackingWithFilters.dependencyLines']
-                }, {
-                    boxLabel: 'Show all story dependencies',
-                    name: 'ReleaseTrackingWithFilters.dependencyLines',
-                    inputValue: 'showDependencyLines',
-                    checked: 'showDependencyLines' === currentSettings['ReleaseTrackingWithFilters.dependencyLines']
-                },],
-                // listeners: {
-                //     scope: this,
-                //     change: function () {
-                //         return;
-                //     }
-                // }
+                xtype: 'text'
             }
+            // {
+            //     xtype: 'radiogroup',
+            //     fieldLabel: 'Dependencies',
+            //     columns: 1,
+            //     vertical: true,
+            //     allowBlank: false,
+            //     items: [{
+            //         boxLabel: "Don't show",
+            //         name: 'ReleaseTrackingWithFilters.dependencyLines',
+            //         inputValue: 'noDependencyLines',
+            //         checked: 'noDependencyLines' === currentSettings['ReleaseTrackingWithFilters.dependencyLines']
+            //     }, {
+            //         boxLabel: "Show single dependency upon clicking a card",
+            //         name: 'ReleaseTrackingWithFilters.dependencyLines',
+            //         inputValue: 'showSingleDependency',
+            //         checked: 'showSingleDependency' === currentSettings['ReleaseTrackingWithFilters.dependencyLines']
+            //     }, {
+            //         boxLabel: 'Show all story dependencies',
+            //         name: 'ReleaseTrackingWithFilters.dependencyLines',
+            //         inputValue: 'showDependencyLines',
+            //         checked: 'showDependencyLines' === currentSettings['ReleaseTrackingWithFilters.dependencyLines']
+            //     },],
+            //     // listeners: {
+            //     //     scope: this,
+            //     //     change: function () {
+            //     //         return;
+            //     //     }
+            //     // }
+            // }
         ];
     },
 
@@ -1170,25 +1243,27 @@ Ext.define("release-tracking-with-filters", {
         let board = this.down('#releaseGridboard');
 
         if (board) {
-            if (this.getSetting('ReleaseTrackingWithFilters.dependencyLines') === 'showDependencyLines') {
-                // let rightArea = this.down('#right-area');
-                this.removeDependencyLines();
+            this.removeDependencyLines();
 
+            if (this.previousCancelIcon) {
+                this.previousDepIcon.setStyle('display', 'inline');
+                this.previousCancelIcon.setStyle('display', 'none');
+                this.previousDepIcon = null;
+                this.previousCancelIcon = null;
+            }
+
+            if (this._shouldShowStoryDependencies()) {
                 // With many dependencies drawn, the loading mask doesn't properly display
                 // and it looks like the app freezes... Not an ideal user experience.
                 // A timeout helps everything render properly before redrawing the dependencies
                 setTimeout(() => {
-                    this.setLoading('Redrawing Dependencies');
-                    this.showAllStoryDependencyLines(board).then({
+                    this.showAllStoryDependencyLines().then({
                         scope: this,
                         success: function () {
                             this.setLoading(false);
                         }
                     });
                 }, 500);
-            }
-            else if (this.getSetting('ReleaseTrackingWithFilters.dependencyLines') === 'showSingleDependency') {
-                this.removeDependencyLines();
             }
         }
     },
@@ -1197,6 +1272,10 @@ Ext.define("release-tracking-with-filters", {
         if (this.drawComponent) {
             this.down('#board-area').remove(this.drawComponent);
         }
+    },
+
+    _shouldShowStoryDependencies: function () {
+        return this.down('#storyDependencyCheckbox').getValue();
     },
 
     onTimeboxScopeChange: function (newTimeboxScope) {
