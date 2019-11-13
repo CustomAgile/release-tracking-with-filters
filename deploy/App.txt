@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>release-tracking-with-filters-1.1.8</title>
+    <title>release-tracking-with-filters-1.1.9</title>
     <!--  (c) 2019 Custom Agile.  All Rights Reserved. -->
-    <!--  Build Date: Mon Nov 11 2019 15:12:22 GMT-0500 (Eastern Standard Time) -->
+    <!--  Build Date: Wed Nov 13 2019 15:54:28 GMT-0500 (Eastern Standard Time) -->
 
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Mon Nov 11 2019 15:12:22 GMT-0500 (Eastern Standard Time)";
-        var CHECKSUM = 538053144584;
+        var APP_BUILD_DATE = "Wed Nov 13 2019 15:54:28 GMT-0500 (Eastern Standard Time)";
+        var CHECKSUM = 551669006330;
     </script>
 
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -3264,6 +3264,7 @@ Ext.define("release-tracking-with-filters", {
 
     launch: function () {
         Rally.data.wsapi.Proxy.superclass.timeout = 120000;
+        Ext.tip.QuickTipManager.init();
 
         Ext.override(Rally.ui.cardboard.CardBoard, {
             getCards: function () {
@@ -3314,15 +3315,16 @@ Ext.define("release-tracking-with-filters", {
             }
         }, {
             xtype: 'checkbox',
-            boxLabel: 'Show Story Dependencies',
+            boxLabel: 'Show Story Dependency Lines (<span class="field-content FeatureStoriesPredecessorsAndSuccessors icon-children"></span>)',
             boxLabelCls: 'date-label dependency-label',
+            // fieldLabel: 
             labelWidth: 180,
-            width: 235,
+            width: 250,
             name: 'dependencies',
             inputValue: true,
             itemId: 'storyDependencyCheckbox',
             cls: 'dependency-checkbox',
-            margin: '0 10 0 20',
+            margin: '0 3 0 20',
             listeners: {
                 scope: this,
                 change: function (cmp, showLines) {
@@ -3340,7 +3342,21 @@ Ext.define("release-tracking-with-filters", {
                     }
                 }
             }
+        }, {
+            xtype: 'component',
+            id: 'storyDependencyIndicator',
+            margin: '2 0 0 0',
+            html: '<span style="font-size:12px" class="icon-help"></span>'
         }]);
+
+        Ext.tip.QuickTipManager.register({
+            target: 'storyDependencyIndicator',
+            text: "This setting will display lines between cards representing all of the dependencies between user stories. Each line will connect to the predecessor on the right side of the card via a small circle and then to the successor on the left side of the card via a triangle.<br><br>Click on a card's dependency icon to view only dependencies related to the stories underneath that feature. An 'x' will replace the dependency icon allowing you to clear the dependencies and reset the view.<br><br>The colors indicate the following:<br> - Grey: Predecessor is scheduled in an iteration before the successor's scheduled iteration<br> - Yellow: The predecessor and successor are scheduled in the same iteration<br> - Red: Either the predecessor is scheduled in an iteration after the successor's scheduled iteration or the predecessor is unscheduled but the successor is scheduled in an iteration",
+            title: 'About Story Dependency Lines',
+            width: 300,
+            showDelay: 10,
+            border: true
+        });
 
         let timeboxScope = this.getContext().getTimeboxScope();
         this._onTimeboxScopeChange(timeboxScope);
@@ -4618,6 +4634,18 @@ Ext.define("release-tracking-with-filters", {
 
 .x-border-layout-ct {
     background-color: white;
+}
+
+.x-tip {
+    border: 1px solid rgb(212, 212, 212);
+    border-radius: 3px;
+}
+
+.x-tip .x-tip-body {
+    background-color: white;
+    padding: 10px;
+    color: black;
+    border-radius: 2px;
 }
 .blue-tabs .x-tab-bar .x-tab-default {
     background-color: white;

@@ -110,6 +110,7 @@ Ext.define("release-tracking-with-filters", {
 
     launch: function () {
         Rally.data.wsapi.Proxy.superclass.timeout = 120000;
+        Ext.tip.QuickTipManager.init();
 
         Ext.override(Rally.ui.cardboard.CardBoard, {
             getCards: function () {
@@ -160,15 +161,16 @@ Ext.define("release-tracking-with-filters", {
             }
         }, {
             xtype: 'checkbox',
-            boxLabel: 'Show Story Dependencies',
+            boxLabel: 'Show Story Dependency Lines (<span class="field-content FeatureStoriesPredecessorsAndSuccessors icon-children"></span>)',
             boxLabelCls: 'date-label dependency-label',
+            // fieldLabel: 
             labelWidth: 180,
-            width: 235,
+            width: 250,
             name: 'dependencies',
             inputValue: true,
             itemId: 'storyDependencyCheckbox',
             cls: 'dependency-checkbox',
-            margin: '0 10 0 20',
+            margin: '0 3 0 20',
             listeners: {
                 scope: this,
                 change: function (cmp, showLines) {
@@ -186,7 +188,21 @@ Ext.define("release-tracking-with-filters", {
                     }
                 }
             }
+        }, {
+            xtype: 'component',
+            id: 'storyDependencyIndicator',
+            margin: '2 0 0 0',
+            html: '<span style="font-size:12px" class="icon-help"></span>'
         }]);
+
+        Ext.tip.QuickTipManager.register({
+            target: 'storyDependencyIndicator',
+            text: "This setting will display lines between cards representing all of the dependencies between user stories. Each line will connect to the predecessor on the right side of the card via a small circle and then to the successor on the left side of the card via a triangle.<br><br>Click on a card's dependency icon to view only dependencies related to the stories underneath that feature. An 'x' will replace the dependency icon allowing you to clear the dependencies and reset the view.<br><br>The colors indicate the following:<br> - Grey: Predecessor is scheduled in an iteration before the successor's scheduled iteration<br> - Yellow: The predecessor and successor are scheduled in the same iteration<br> - Red: Either the predecessor is scheduled in an iteration after the successor's scheduled iteration or the predecessor is unscheduled but the successor is scheduled in an iteration",
+            title: 'About Story Dependency Lines',
+            width: 300,
+            showDelay: 10,
+            border: true
+        });
 
         let timeboxScope = this.getContext().getTimeboxScope();
         this._onTimeboxScopeChange(timeboxScope);
