@@ -86,7 +86,8 @@ Ext.define("release-tracking-with-filters", {
             id: 'date-range-area',
             xtype: 'container',
             layout: 'hbox',
-            minWidth: 700,
+            minWidth: 950,
+            minHeight: 60,
             padding: '15 0 15 20',
         }, {
             id: 'board-area',
@@ -163,7 +164,6 @@ Ext.define("release-tracking-with-filters", {
             xtype: 'checkbox',
             boxLabel: 'Show Story Dependency Lines (<span class="field-content FeatureStoriesPredecessorsAndSuccessors icon-children"></span>)',
             boxLabelCls: 'date-label dependency-label',
-            // fieldLabel: 
             labelWidth: 180,
             width: 250,
             name: 'dependencies',
@@ -184,15 +184,66 @@ Ext.define("release-tracking-with-filters", {
                     this.removeDependencyLines();
 
                     if (showLines) {
+                        this.down('#dependencyFiltersContainer').show();
                         this.showAllStoryDependencyLines();
+                    } else {
+                        this.down('#dependencyFiltersContainer').hide();
                     }
                 }
             }
         }, {
             xtype: 'component',
             id: 'storyDependencyIndicator',
-            margin: '2 0 0 0',
+            margin: '2 15 0 0',
             html: '<span style="font-size:12px" class="icon-help"></span>'
+        }, {
+            xtype: 'fieldcontainer',
+            itemId: 'dependencyFiltersContainer',
+            hidden: true,
+            fieldLabel: 'Filters:',
+            labelWidth: 50,
+            defaultType: 'checkboxfield',
+            layout: 'hbox',
+            width: 300,
+            fieldDefaults: {
+                name: 'lineFilter',
+                labelSeparator: '',
+                margin: '-2 10 0 0'
+            },
+            items: [
+                {
+                    fieldLabel: 'Grey',
+                    id: 'greyLineFilter',
+                    width: 56,
+                    labelWidth: 28,
+                    checked: true,
+                    margin: '-2 8 0 0',
+                    listeners: {
+                        scope: this,
+                        change: this.showAllStoryDependencyLines
+                    }
+                }, {
+                    fieldLabel: 'Yellow',
+                    id: 'yellowLineFilter',
+                    width: 60,
+                    labelWidth: 35,
+                    checked: true,
+                    listeners: {
+                        scope: this,
+                        change: this.showAllStoryDependencyLines
+                    }
+                }, {
+                    fieldLabel: 'Red',
+                    id: 'redLineFilter',
+                    width: 60,
+                    labelWidth: 26,
+                    checked: true,
+                    listeners: {
+                        scope: this,
+                        change: this.showAllStoryDependencyLines
+                    }
+                }
+            ]
         }]);
 
         Ext.tip.QuickTipManager.register({
@@ -963,6 +1014,9 @@ Ext.define("release-tracking-with-filters", {
 
         // Yellow line if the dependencies are in the same iteration
         if (predX === succX) {
+            if (this._shouldShowStoryDependencies() && !this.down('#yellowLineFilter').getValue()) {
+                return [];
+            }
             stroke = "#FAD200";
         }
         // Red line if:
@@ -970,7 +1024,13 @@ Ext.define("release-tracking-with-filters", {
         //     OR
         //     - The successor is scheduled for an iteration but the predecessor is not
         else if ((predX > succX) || (!predecessorCard.record.get('Iteration') && successorCard.record.get('Iteration'))) {
+            if (this._shouldShowStoryDependencies() && !this.down('#redLineFilter').getValue()) {
+                return [];
+            }
             stroke = "#F66349";
+        }
+        else if (this._shouldShowStoryDependencies() && !this.down('#greyLineFilter').getValue()) {
+            return [];
         }
 
         let xOffset = -boardArea.getX() + boardArea.getEl().getMargin().left;
