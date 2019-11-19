@@ -89,13 +89,13 @@ Ext.define('StoryFeatureCard', {
         html.push('<td class="ts-card-content ts-formatted-id"><div class="field-content">' + this.feature.FormattedID + '</div></td>');
         html.push('<td class="ts-card-content ts-card-icons">');
         if (this.storiesHaveDependencies) {
-            html.push('<span class="field-content FeatureStoriesPredecessorsAndSuccessors icon-children"></span>');
+            html.push('<span class="field-content FeatureStoriesPredecessorsAndSuccessors icon-children" data-qtip="Story to Story Dependencies"></span>');
             html.push('<span class="field-content FeatureStoriesPredecessorsAndSuccessorsCancel icon-cancel"></span>');
         }
         var featurePred = feature.Predecessors;
         var featureSucc = feature.Successors;
         if ((featurePred && featurePred.Count) || (featureSucc && featureSucc.Count)) {
-            html.push('<span class="field-content FeaturePredecessorsAndSuccessors icon-predecessor"></span>');
+            html.push('<span class="field-content FeaturePredecessorsAndSuccessors icon-predecessor" data-qtip="Feature to Feature Dependencies"></span>');
         }
         html.push('</td>');
         html.push('<td class="ts-card-content ts-accepted-count"><span class="field-content">' + this.acceptedStoryCount + ' / ' + this.storyCount + '</span></td>');

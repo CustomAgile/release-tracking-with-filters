@@ -109,6 +109,48 @@ Ext.define("release-tracking-with-filters", {
         name: "release-tracking-with-filters"
     },
 
+    helpHtml: `
+    <h3>Dependency Icons</h3>
+
+    <h4><span class="field-content FeatureStoriesPredecessorsAndSuccessors icon-children"></span> - Story to Story dependencies</h4>
+    <h4><span class="field-content FeaturePredecessorsAndSuccessors icon-predecessor"></span> - Feature to Feature dependencies</h4>
+
+    <h3>Show Story Dependency Lines</h3>
+
+    <p>This setting will display lines between cards that have user story dependencies.</p>
+    <p>Each line will connect to the predecessor on the right side of the card via a small circle and then
+    to the successor on the left side of the card via a triangle.</p>
+    
+    <br>
+    <img src="${this.dependencyExample}" alt="Story Dependency Line Example" style="width:400px;display:block;margin-left:auto;margin-right:auto" />
+    <br>
+    
+    Click on a card's story dependency icon(<span class="field-content FeatureStoriesPredecessorsAndSuccessors icon-children"></span>) 
+    to view only dependencies for stories within that feature. An 'x' will replace the dependency icon allowing you to clear the 
+    dependencies and reset the view.
+    
+    <br><br>
+    
+    <b>Note: Feature to feature dependency information can be viewed by clicking on this icon: </b><span class="field-content FeaturePredecessorsAndSuccessors icon-predecessor"></span>
+    <br><br>However, Feature-Feature dependency lines cannot be drawn as this board is a view of stories by iteration and therefore Features are often displayed in the board multiple times each.
+    
+    <br><br>
+    
+    The colors indicate the following:
+    <ul>
+        <li><b><span style="color:grey;">Grey</span>:</b> Successor is scheduled in an iteration after the predecessor</li>
+        <li><b><span style="color:#FAD200;">Yellow:</span></b> Predecessor and successor are scheduled in the same iteration</li>
+        <li><b><span style="color:#F66349;">Red:</span></b> 
+        <ul>
+            <li>The predecessor is scheduled in an iteration after the successor</li>
+            <li>Or the successor is scheduled in an iteration but it's predecessor is unscheduled</li>
+        </ul>
+    </ul>
+    <br>
+    Lines can be displayed or hidden by color using the provided color checkbox filters that appear after selecting the "Show Dependency Lines" option.
+    <br><br>
+    `,
+
     launch: function () {
         Rally.data.wsapi.Proxy.superclass.timeout = 120000;
         Ext.tip.QuickTipManager.init();
@@ -192,10 +234,13 @@ Ext.define("release-tracking-with-filters", {
                 }
             }
         }, {
-            xtype: 'component',
-            id: 'storyDependencyIndicator',
-            margin: '2 15 0 0',
-            html: '<span style="font-size:12px" class="icon-help"></span>'
+            xtype: 'rallybutton',
+            cls: 'customagile-button help',
+            iconOnly: true,
+            iconCls: 'icon-help',
+            handler: (...args) => this.onHelpClicked(...args),
+            id: 'storyDependencyHelp',
+            margin: '2 15 0 0'
         }, {
             xtype: 'fieldcontainer',
             itemId: 'dependencyFiltersContainer',
@@ -245,15 +290,6 @@ Ext.define("release-tracking-with-filters", {
                 }
             ]
         }]);
-
-        Ext.tip.QuickTipManager.register({
-            target: 'storyDependencyIndicator',
-            text: "This setting will display lines between cards representing all of the dependencies between user stories. Each line will connect to the predecessor on the right side of the card via a small circle and then to the successor on the left side of the card via a triangle.<br><br>Click on a card's dependency icon to view only dependencies related to the stories underneath that feature. An 'x' will replace the dependency icon allowing you to clear the dependencies and reset the view.<br><br>The colors indicate the following:<br> - Grey: Predecessor is scheduled in an iteration before the successor's scheduled iteration<br> - Yellow: The predecessor and successor are scheduled in the same iteration<br> - Red: Either the predecessor is scheduled in an iteration after the successor's scheduled iteration or the predecessor is unscheduled but the successor is scheduled in an iteration",
-            title: 'About Story Dependency Lines',
-            width: 300,
-            showDelay: 10,
-            border: true
-        });
 
         let timeboxScope = this.getContext().getTimeboxScope();
         this._onTimeboxScopeChange(timeboxScope);
@@ -1394,5 +1430,28 @@ Ext.define("release-tracking-with-filters", {
         endDatePicker.suspendEvents();
         endDatePicker.setValue(this.timeboxEnd);
         endDatePicker.resumeEvents();
+    },
+
+    onHelpClicked() {
+        const {
+            helpTitle, helpDescription, helpUsage, helpNotes
+        } = this;
+
+        Ext.create('Rally.ui.dialog.Dialog', {
+            autoShow: true,
+            layout: 'fit',
+            width: '70%',
+            height: '90%',
+            closable: true,
+            autoDestroy: true,
+            autoScroll: true,
+            title: 'Dependencies',
+            items: {
+                xtype: 'component',
+                html: this.helpHtml,
+                padding: 10,
+                style: 'font-size:12px;'
+            }
+        });
     }
 });

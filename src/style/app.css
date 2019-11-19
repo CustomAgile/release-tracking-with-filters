@@ -143,3 +143,21 @@
     color: black;
     border-radius: 2px;
 }
+
+.icon-help {
+    font-size: 15px;
+    text-align: center;
+    color: #327c98 !important;
+}
+
+.icon-help:hover {
+    color: #21516d !important;
+}
+
+li {
+    line-height: 18px;
+}
+
+.customagile-button.help {
+    padding: 0;
+}
