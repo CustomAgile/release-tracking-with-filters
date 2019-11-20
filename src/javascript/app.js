@@ -509,6 +509,10 @@ Ext.define("release-tracking-with-filters", {
             }
         }
 
+        if (this.getSetting('query')) {
+            queries = queries.concat(Rally.data.QueryFilter.fromQueryString(this.getSetting('query')));
+        }
+
         return queries;
     },
 
@@ -1304,51 +1308,39 @@ Ext.define("release-tracking-with-filters", {
     },
 
     getSettingsFields: function () {
-        // let currentSettings = Rally.getApp().getSettings();
-        // if (!currentSettings.hasOwnProperty('ReleaseTrackingWithFilters.dependencyLines')) {
-        //     currentSettings['ReleaseTrackingWithFilters.dependencyLines'] = 'noDependencyLines';
-        // }
-
-        // Need at least 1 setting in order to add multi-level filter settings
         return [
             {
-                xtype: 'text'
+                xtype: 'textarea',
+                fieldLabel: 'Feature Query',
+                name: 'query',
+                anchor: '100%',
+                cls: 'query-field',
+                margin: '0 70 0 0',
+                plugins: [
+                    {
+                        ptype: 'rallyhelpfield',
+                        helpId: 194
+                    },
+                    'rallyfieldvalidationui'
+                ],
+                validateOnBlur: false,
+                validateOnChange: false,
+                validator: function (value) {
+                    try {
+                        if (value) {
+                            Rally.data.wsapi.Filter.fromQueryString(value);
+                        }
+                        return true;
+                    } catch (e) {
+                        return e.message;
+                    }
+                }
             }
-            // {
-            //     xtype: 'radiogroup',
-            //     fieldLabel: 'Dependencies',
-            //     columns: 1,
-            //     vertical: true,
-            //     allowBlank: false,
-            //     items: [{
-            //         boxLabel: "Don't show",
-            //         name: 'ReleaseTrackingWithFilters.dependencyLines',
-            //         inputValue: 'noDependencyLines',
-            //         checked: 'noDependencyLines' === currentSettings['ReleaseTrackingWithFilters.dependencyLines']
-            //     }, {
-            //         boxLabel: "Show single dependency upon clicking a card",
-            //         name: 'ReleaseTrackingWithFilters.dependencyLines',
-            //         inputValue: 'showSingleDependency',
-            //         checked: 'showSingleDependency' === currentSettings['ReleaseTrackingWithFilters.dependencyLines']
-            //     }, {
-            //         boxLabel: 'Show all story dependencies',
-            //         name: 'ReleaseTrackingWithFilters.dependencyLines',
-            //         inputValue: 'showDependencyLines',
-            //         checked: 'showDependencyLines' === currentSettings['ReleaseTrackingWithFilters.dependencyLines']
-            //     },],
-            //     // listeners: {
-            //     //     scope: this,
-            //     //     change: function () {
-            //     //         return;
-            //     //     }
-            //     // }
-            // }
         ];
     },
 
     searchAllProjects: function () {
         return this.ancestorFilterPlugin.getIgnoreProjectScope();
-        // return this.scopeControlPlugin.getValue();
     },
 
     onCardboardResize: function () {
