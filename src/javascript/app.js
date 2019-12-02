@@ -240,7 +240,7 @@ Ext.define("release-tracking-with-filters", {
             iconCls: 'icon-help',
             handler: (...args) => this.onHelpClicked(...args),
             id: 'storyDependencyHelp',
-            margin: '2 15 0 0'
+            margin: '2 15 0 5'
         }, {
             xtype: 'fieldcontainer',
             itemId: 'dependencyFiltersContainer',
@@ -499,7 +499,7 @@ Ext.define("release-tracking-with-filters", {
         }
 
         if (this.ancestorFilterPlugin) {
-            let filters = await this.ancestorFilterPlugin.getAllFiltersForType(this.lowestPiTypePath, false).catch((e) => {
+            let filters = await this.ancestorFilterPlugin.getAllFiltersForType(this.lowestPiTypePath, true).catch((e) => {
                 Rally.ui.notify.Notifier.showError({ message: (e.message || e) });
                 this.loadingFailed = true;
             });
@@ -1425,10 +1425,6 @@ Ext.define("release-tracking-with-filters", {
     },
 
     onHelpClicked() {
-        const {
-            helpTitle, helpDescription, helpUsage, helpNotes
-        } = this;
-
         Ext.create('Rally.ui.dialog.Dialog', {
             autoShow: true,
             layout: 'fit',
