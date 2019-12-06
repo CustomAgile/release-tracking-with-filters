@@ -530,7 +530,8 @@ Ext.define("release-tracking-with-filters", {
             model: 'Iteration',
             autoLoad: false,
             filters: filter,
-            context: this.getContext().getDataContext()
+            context: this.getContext().getDataContext(),
+            pageSize: 4000
         });
         let iterations = await this.iterationsStore.load();
         return iterations;
