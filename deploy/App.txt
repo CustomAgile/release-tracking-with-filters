@@ -3,11 +3,11 @@
 <head>
     <title>release-tracking-with-filters-1.2.0</title>
     <!--  (c) 2019 Custom Agile.  All Rights Reserved. -->
-    <!--  Build Date: Fri Dec 06 2019 09:25:29 GMT-0500 (Eastern Standard Time) -->
+    <!--  Build Date: Fri Dec 06 2019 10:48:07 GMT-0500 (Eastern Standard Time) -->
 
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Fri Dec 06 2019 09:25:29 GMT-0500 (Eastern Standard Time)";
-        var CHECKSUM = 2435031476151;
+        var APP_BUILD_DATE = "Fri Dec 06 2019 10:48:07 GMT-0500 (Eastern Standard Time)";
+        var CHECKSUM = 2436270410312;
     </script>
 
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -1284,6 +1284,7 @@ Ext.define('Utils.AncestorPiAppFilter', {
                 cls: 'filter-help',
                 iconOnly: true,
                 iconCls: 'icon-help',
+                hidden: this._isSubscriber() || !this._showMultiLevelFilter(),
                 handler: (...args) => this.onHelpClicked(...args)
             });
         }
