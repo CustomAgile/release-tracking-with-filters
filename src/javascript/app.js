@@ -300,7 +300,8 @@ Ext.define("release-tracking-with-filters", {
             settingsConfig: {},
             whiteListFields: [
                 'Tags',
-                'Milestones'
+                'Milestones',
+                'c_EnterpriseApprovalEA'
             ],
             filtersHidden: false,
             listeners: {
