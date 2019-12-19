@@ -198,7 +198,7 @@ Ext.define('Rally.technicalservices.HierarchyExporter', {
     },
     _getExportDataRow: function (recData, columns, ancestors) {
         var rec = Ext.clone(ancestors),
-            type = recData._type; //obj.getData('type');
+            type = recData._type;
 
         rec[type] = recData.FormattedID;
         rec.type = this.getTypePathDisplayName(recData._type);
@@ -210,7 +210,7 @@ Ext.define('Rally.technicalservices.HierarchyExporter', {
                 var data = recData[field];
 
                 if (field === "Predecessors" || field === "Successors") {
-                    data = recData[field].Count || 0;
+                    data = (recData[field] && recData[field].Count) || 0;
                 }
                 else if (field === "Parent") {
                     data = recData[field] || recData["PortfolioItem"];

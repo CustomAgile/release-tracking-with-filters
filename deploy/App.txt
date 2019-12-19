@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>release-tracking-with-filters-1.2.1</title>
+    <title>release-tracking-with-filters-1.2.2</title>
     <!--  (c) 2019 Custom Agile.  All Rights Reserved. -->
-    <!--  Build Date: Thu Dec 12 2019 15:32:19 GMT-0500 (Eastern Standard Time) -->
+    <!--  Build Date: Thu Dec 19 2019 11:17:02 GMT-0500 (Eastern Standard Time) -->
 
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Dec 12 2019 15:32:19 GMT-0500 (Eastern Standard Time)";
-        var CHECKSUM = 2460861203356;
+        var APP_BUILD_DATE = "Thu Dec 19 2019 11:17:02 GMT-0500 (Eastern Standard Time)";
+        var CHECKSUM = 2501902998849;
     </script>
 
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -246,6 +246,9 @@ Ext.define('Utils.AncestorPiSearchComboBox', {
     }
 });
 
+/*
+        TODO (AM) - Separate code into multiple smaller files
+*/
 Ext.override(Rally.ui.inlinefilter.FilterFieldFactory, {
     _getBaseEditorConfig: function (fieldDef, context, model) {
         if (fieldDef.name === "CreatedBy") {
@@ -299,7 +302,7 @@ Ext.define('CustomAgile.multilevelfilter.ToggleButton', {
 
 Ext.define('Utils.AncestorPiAppFilter', {
     alias: 'plugin.UtilsAncestorPiAppFilter',
-    version: "1.1.4",
+    version: "1.1.5",
     mixins: [
         'Ext.AbstractPlugin',
         'Rally.Messageable'
@@ -679,10 +682,12 @@ Ext.define('Utils.AncestorPiAppFilter', {
         }
 
         var filters = {};
-        _.each(this.filterControls, function (filterControl) {
-            let typeName = (filterControl.inlineFilterButton.modelNames) || 'unknown';
-            filters[typeName] = filterControl.inlineFilterButton.getFilters();
-        });
+        if (this.filterControls) {
+            _.each(this.filterControls, function (filterControl) {
+                let typeName = (filterControl.inlineFilterButton.modelNames) || 'unknown';
+                filters[typeName] = filterControl.inlineFilterButton.getFilters();
+            });
+        }
         return filters;
     },
 
@@ -891,13 +896,17 @@ Ext.define('Utils.AncestorPiAppFilter', {
 
     setCurrentView: function (view) {
         let scopeControl = this.renderArea.down('#ignoreScopeControl');
-        if (scopeControl) {
+        if (scopeControl && typeof view.ignoreProjectScope === 'boolean') {
             scopeControl.suspendEvents(false);
             scopeControl.setValue(view.ignoreProjectScope);
             scopeControl.resumeEvents();
         }
+
         this.setMultiLevelFilterStates(view.filterStates);
-        this._setPiSelector(view.piTypePath, view.pi);
+
+        if (view.piTypePath) {
+            this._setPiSelector(view.piTypePath, view.pi);
+        }
     },
 
     // Returns an object of states for all of the inline filters
@@ -908,10 +917,12 @@ Ext.define('Utils.AncestorPiAppFilter', {
         }
 
         var states = {};
-        _.each(this.filterControls, function (filterControl) {
-            let typeName = (filterControl.inlineFilterButton.modelNames) || 'unknown';
-            states[typeName] = filterControl.inlineFilterButton.getState();
-        });
+        if (this.filterControls) {
+            _.each(this.filterControls, function (filterControl) {
+                let typeName = (filterControl.inlineFilterButton.modelNames) || 'unknown';
+                states[typeName] = filterControl.inlineFilterButton.getState();
+            });
+        }
 
         return states;
     },
@@ -932,21 +943,62 @@ Ext.define('Utils.AncestorPiAppFilter', {
     // Used when applying a shared view to the filters
     setMultiLevelFilterStates: function (states) {
         if (!this._isSubscriber()) {
-            if (this.tabPanel) {
-                this.tabPanel.removeAll();
+            if (states) {
+                if (this.tabPanel) {
+                    this.tabPanel.removeAll();
+                }
+                for (let key in states) {
+                    if (states.hasOwnProperty(key)) {
+                        for (let i = 0;i < this.filterControls.length;i++) {
+                            let typeName = (this.filterControls[i].inlineFilterButton.modelNames) || 'unknown';
+                            if (typeName === key) {
+                                let filterBtn = this.filterControls[i].inlineFilterButton;
+                                filterBtn.applyState(states[key]);
+                            }
+                        }
+                    }
+                }
+                setTimeout(function () { this.tabPanel.setActiveTab(0); }.bind(this), 1500);
             }
-            for (let key in states) {
-                if (states.hasOwnProperty(key)) {
-                    for (let i = 0;i < this.filterControls.length;i++) {
-                        let typeName = (this.filterControls[i].inlineFilterButton.modelNames) || 'unknown';
-                        if (typeName === key) {
-                            let filterBtn = this.filterControls[i].inlineFilterButton;
-                            filterBtn.applyState(states[key]);
+            else {
+                this._clearAllFilters();
+            }
+        }
+    },
+
+    // On many apps, the multilevel filter replaces the original single inline filter
+    // control. Some users have saved views containing a filter state from this original
+    // filter. This method allows apps to try and apply those filters to the multilevel
+    // filter at the proper level in the porfolio hierarchy
+    mergeLegacyFilter: function (multiFilterStates, legacyFilterState, modelName) {
+        if (!this._isSubscriber() && multiFilterStates && legacyFilterState && modelName) {
+            for (let multiModel in multiFilterStates) {
+                if (multiFilterStates.hasOwnProperty(multiModel)) {
+                    if (multiModel === modelName) {
+                        try {
+                            let currentState = multiFilterStates[multiModel];
+                            if (legacyFilterState.matchType) {
+                                currentState.matchType = legacyFilterState.matchType;
+                            }
+                            if (typeof legacyFilterState.condition === 'string') {
+                                currentState.condition = legacyFilterState.condition;
+                            }
+                            if (legacyFilterState.quickFilters) {
+                                currentState.quickFilters = _.merge(currentState.quickFilters, legacyFilterState.quickFilters);
+                            }
+                            if (legacyFilterState.advancedFilters) {
+                                currentState.advancedFilters = _.merge(currentState.advancedFilters, legacyFilterState.advancedFilters);
+                            }
+                            if (legacyFilterState.quickFilterFields) {
+                                currentState.quickFilterFields = _.merge(currentState.quickFilterFields, legacyFilterState.quickFilterFields);
+                            }
+                        }
+                        catch (e) {
+                            console.error('Failed to merge legacy filter into multi-level filter');
                         }
                     }
                 }
             }
-            setTimeout(function () { this.tabPanel.setActiveTab(0); }.bind(this), 1500);
         }
     },
 
@@ -2771,7 +2823,7 @@ Ext.define('Rally.technicalservices.HierarchyExporter', {
     },
     _getExportDataRow: function (recData, columns, ancestors) {
         var rec = Ext.clone(ancestors),
-            type = recData._type; //obj.getData('type');
+            type = recData._type;
 
         rec[type] = recData.FormattedID;
         rec.type = this.getTypePathDisplayName(recData._type);
@@ -2783,7 +2835,7 @@ Ext.define('Rally.technicalservices.HierarchyExporter', {
                 var data = recData[field];
 
                 if (field === "Predecessors" || field === "Successors") {
-                    data = recData[field].Count || 0;
+                    data = (recData[field] && recData[field].Count) || 0;
                 }
                 else if (field === "Parent") {
                     data = recData[field] || recData["PortfolioItem"];
@@ -3382,10 +3434,10 @@ Ext.define('TsExportGrid', {
         return Rally.getApp().down('#' + this.gridId);
     },
 
-    _export: function (args) {
+    _export: async function (args) {
         var columns = this._getExportColumns(),
             fetch = this._getExportFetch(),
-            filters = this._getExportFilters(),
+            filters = await this._getExportFilters(),
             modelName = this.model,
             childModels = args.childModels,
             sorters = this._getExportSorters();
@@ -3452,7 +3504,7 @@ Ext.define('TsExportGrid', {
             return filteredColumns;
         }
     },
-    _getExportFilters: function () {
+    _getExportFilters: async function () {
         var grid = this._getGrid(),
             filters = [],
             query = Rally.getApp().getSetting('query');
@@ -3464,6 +3516,12 @@ Ext.define('TsExportGrid', {
 
         if (query) {
             filters.push(Rally.data.wsapi.Filter.fromQueryString(query));
+        }
+
+        let ancestorAndMultiFilters = await Rally.getApp()._getAncestorAndMultiFilters();
+
+        if (ancestorAndMultiFilters) {
+            filters = filters.concat(ancestorAndMultiFilters);
         }
 
         var timeboxScope = this.context.getTimeboxScope();
@@ -3884,6 +3942,9 @@ Ext.define("release-tracking-with-filters", {
         Ext.suspendLayouts();
         app.settingView = true;
         if (app.ancestorFilterPlugin) {
+            if (view.filterStates) {
+                app.ancestorFilterPlugin.mergeLegacyFilter(view.filterStates, view, app.lowestPiTypePath);
+            }
             if (app.ancestorFilterPlugin.renderArea.down('#ignoreScopeControl')) {
                 app.ancestorFilterPlugin.renderArea.down('#ignoreScopeControl').setValue(view.ignoreProjectScope);
             }
@@ -4007,15 +4068,9 @@ Ext.define("release-tracking-with-filters", {
                 break;
         }
 
-        if (this.ancestorFilterPlugin) {
-            let filters = await this.ancestorFilterPlugin.getAllFiltersForType(this.lowestPiTypePath, true).catch((e) => {
-                Rally.ui.notify.Notifier.showError({ message: (e.message || e) });
-                this.loadingFailed = true;
-            });
-
-            if (filters) {
-                queries = queries.concat(filters);
-            }
+        let filters = await this._getAncestorAndMultiFilters();
+        if (filters) {
+            queries = queries.concat(filters);
         }
 
         if (this.getSetting('query')) {
@@ -4044,6 +4099,17 @@ Ext.define("release-tracking-with-filters", {
         });
         let iterations = await this.iterationsStore.load();
         return iterations;
+    },
+
+    _getAncestorAndMultiFilters: async function () {
+        let filters = [];
+        if (this.ancestorFilterPlugin) {
+            filters = await this.ancestorFilterPlugin.getAllFiltersForType(this.lowestPiTypePath, true).catch((e) => {
+                Rally.ui.notify.Notifier.showError({ message: (e.message || e) });
+                this.loadingFailed = true;
+            });
+        }
+        return filters;
     },
 
     _getDefects: function () {
@@ -4083,7 +4149,7 @@ Ext.define("release-tracking-with-filters", {
                 ptype: 'rallygridboardinlinefiltercontrol',
                 inlineFilterButtonConfig: {
                     stateful: true,
-                    stateId: this.getContext().getScopedStateId('CA.releaseTrackingWithFilters'),
+                    stateId: this.getContext().getScopedStateId('CA.releaseTrackingWithFiltersNewFilters'),
                     hidden: true,
                     modelNames: this.modelNames,
                     inlineFilterPanelConfig: {
@@ -4093,7 +4159,8 @@ Ext.define("release-tracking-with-filters", {
                             modelName: this.lowestPiTypePath,
                             whiteListFields: [
                                 'Tags',
-                                'Milestones'
+                                'Milestones',
+                                'c_EnterpriseApprovalEA'
                             ]
                         }
                     }

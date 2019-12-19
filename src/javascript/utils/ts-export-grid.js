@@ -34,10 +34,10 @@ Ext.define('TsExportGrid', {
         return Rally.getApp().down('#' + this.gridId);
     },
 
-    _export: function (args) {
+    _export: async function (args) {
         var columns = this._getExportColumns(),
             fetch = this._getExportFetch(),
-            filters = this._getExportFilters(),
+            filters = await this._getExportFilters(),
             modelName = this.model,
             childModels = args.childModels,
             sorters = this._getExportSorters();
@@ -104,7 +104,7 @@ Ext.define('TsExportGrid', {
             return filteredColumns;
         }
     },
-    _getExportFilters: function () {
+    _getExportFilters: async function () {
         var grid = this._getGrid(),
             filters = [],
             query = Rally.getApp().getSetting('query');
@@ -116,6 +116,12 @@ Ext.define('TsExportGrid', {
 
         if (query) {
             filters.push(Rally.data.wsapi.Filter.fromQueryString(query));
+        }
+
+        let ancestorAndMultiFilters = await Rally.getApp()._getAncestorAndMultiFilters();
+
+        if (ancestorAndMultiFilters) {
+            filters = filters.concat(ancestorAndMultiFilters);
         }
 
         var timeboxScope = this.context.getTimeboxScope();

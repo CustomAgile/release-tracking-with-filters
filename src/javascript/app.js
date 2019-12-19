@@ -376,6 +376,9 @@ Ext.define("release-tracking-with-filters", {
         Ext.suspendLayouts();
         app.settingView = true;
         if (app.ancestorFilterPlugin) {
+            if (view.filterStates) {
+                app.ancestorFilterPlugin.mergeLegacyFilter(view.filterStates, view, app.lowestPiTypePath);
+            }
             if (app.ancestorFilterPlugin.renderArea.down('#ignoreScopeControl')) {
                 app.ancestorFilterPlugin.renderArea.down('#ignoreScopeControl').setValue(view.ignoreProjectScope);
             }
@@ -499,15 +502,9 @@ Ext.define("release-tracking-with-filters", {
                 break;
         }
 
-        if (this.ancestorFilterPlugin) {
-            let filters = await this.ancestorFilterPlugin.getAllFiltersForType(this.lowestPiTypePath, true).catch((e) => {
-                Rally.ui.notify.Notifier.showError({ message: (e.message || e) });
-                this.loadingFailed = true;
-            });
-
-            if (filters) {
-                queries = queries.concat(filters);
-            }
+        let filters = await this._getAncestorAndMultiFilters();
+        if (filters) {
+            queries = queries.concat(filters);
         }
 
         if (this.getSetting('query')) {
@@ -536,6 +533,17 @@ Ext.define("release-tracking-with-filters", {
         });
         let iterations = await this.iterationsStore.load();
         return iterations;
+    },
+
+    _getAncestorAndMultiFilters: async function () {
+        let filters = [];
+        if (this.ancestorFilterPlugin) {
+            filters = await this.ancestorFilterPlugin.getAllFiltersForType(this.lowestPiTypePath, true).catch((e) => {
+                Rally.ui.notify.Notifier.showError({ message: (e.message || e) });
+                this.loadingFailed = true;
+            });
+        }
+        return filters;
     },
 
     _getDefects: function () {
@@ -575,7 +583,7 @@ Ext.define("release-tracking-with-filters", {
                 ptype: 'rallygridboardinlinefiltercontrol',
                 inlineFilterButtonConfig: {
                     stateful: true,
-                    stateId: this.getContext().getScopedStateId('CA.releaseTrackingWithFilters'),
+                    stateId: this.getContext().getScopedStateId('CA.releaseTrackingWithFiltersNewFilters'),
                     hidden: true,
                     modelNames: this.modelNames,
                     inlineFilterPanelConfig: {
@@ -585,7 +593,8 @@ Ext.define("release-tracking-with-filters", {
                             modelName: this.lowestPiTypePath,
                             whiteListFields: [
                                 'Tags',
-                                'Milestones'
+                                'Milestones',
+                                'c_EnterpriseApprovalEA'
                             ]
                         }
                     }
