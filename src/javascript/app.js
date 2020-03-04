@@ -162,11 +162,7 @@ Ext.define("release-tracking-with-filters", {
                     cards = cards.concat(column.getCards());
                 });
                 return cards;
-            },
-            // fireEvent: function (name) {
-            //     console.log(name);
-            //     this.callParent(arguments);
-            // }
+            }
         });
 
         this.down('#right-area').on('resize', this.onCardboardResize, this);
@@ -304,6 +300,7 @@ Ext.define("release-tracking-with-filters", {
                 'c_EnterpriseApprovalEA'
             ],
             filtersHidden: false,
+            visibleTab: 'PortfolioItem/Feature',
             listeners: {
                 scope: this,
                 ready(plugin) {
@@ -410,26 +407,18 @@ Ext.define("release-tracking-with-filters", {
         }
     },
 
-    //setLoading: function (loading) {
-    // this.setLoading(loading);
-    // this.down('#board-area').setLoading(loading);
-    // if (this.grid) {
-    //     let treegrid = this.grid.down('rallytreegrid');
-    //     if (treegrid) {
-    //         treegrid.setLoading(loading);
-    //     }
-    // }
-    // },
-
     // Usual monkey business to size gridboards
     onResize: function () {
-        this.callParent(arguments);
-        let gridArea = this.down('#grid-area');
-        let grid = this.down('rallygridboard');
-        if (gridArea && grid) {
-            grid.setHeight(gridArea.getHeight());
-        }
-        return;
+        // Hiding one of the advanced filters throws an error once this method is 
+        // called and we try to set the grid height. Waiting a bit first solves this
+        setTimeout(() => {
+            this.callParent(arguments);
+            let gridArea = this.down('#grid-area');
+            let grid = this.down('rallygridboard');
+            if (gridArea && grid) {
+                grid.setHeight(gridArea.getHeight());
+            }
+        }, 500);
     },
 
     _updatePisStore: async function () {
