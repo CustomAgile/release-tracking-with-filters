@@ -199,6 +199,32 @@ Ext.define("release-tracking-with-filters", {
                 }
             }
         }, {
+            itemId: 'swimlaneCombo',
+            xtype: 'rallycombobox',
+            fieldLabel: 'Swimlanes',
+            displayField: 'name',
+            valueField: 'value',
+            editable: false,
+            allowBlank: false,
+            labelWidth: 70,
+            width: 200,
+            margin: '0 5 0 10',
+            store: Ext.create('Ext.data.Store', {
+                fields: ['name', 'value'],
+                data: [
+                    { name: 'Project', value: 'Project' },
+                    { name: 'Feature', value: 'Feature' }
+                ]
+            }),
+            listeners: {
+                scope: this,
+                change: function () {
+                    if (this.storiesFilter && this.currentIterations) {
+                        this._addPisBoard(this.storiesFilter, this.currentIterations);
+                    }
+                }
+            }
+        }, {
             xtype: 'checkbox',
             boxLabel: 'Show Story Dependency Lines (<span class="field-content FeatureStoriesPredecessorsAndSuccessors icon-children"></span>)',
             boxLabelCls: 'date-label dependency-label',
@@ -801,12 +827,12 @@ Ext.define("release-tracking-with-filters", {
                 }
             },
             rowConfig: {
-                field: 'Project',
+                field: this.down('#swimlaneCombo').getValue() || 'Project', // this.lowestPiTypeName,// 'FormattedID', // Project
                 enableCrossRowDragging: false
             },
             columns: columns,
             cardConfig: {
-                xtype: 'storyfeaturecard',
+                //  xtype: 'storyfeaturecard',
                 lowestPiTypeName: this.lowestPiTypeName,
                 draggable: false,
                 isHiddenFunc: this._isCardHidden.bind(this),
