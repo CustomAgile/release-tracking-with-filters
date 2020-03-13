@@ -83,12 +83,27 @@ Ext.define("release-tracking-with-filters", {
         overflowX: 'auto',
         overflowY: 'auto',
         items: [{
-            id: 'date-range-area',
+            id: 'controls-area',
             xtype: 'container',
             layout: 'hbox',
             minWidth: 950,
-            minHeight: 60,
-            padding: '15 0 15 20',
+            minHeight: 100,
+            padding: '10 0 10 20',
+            items: [{
+                id: 'date-range-area',
+                xtype: 'container',
+                layout: 'vbox'
+            }, {
+                id: 'card-controls-area',
+                xtype: 'container',
+                layout: 'vbox',
+                margin: '0 0 0 30',
+            }, {
+                id: 'dependency-controls-area',
+                xtype: 'container',
+                layout: 'vbox',
+                margin: '0 0 0 30',
+            }]
         }, {
             id: 'board-area',
             xtype: 'container',
@@ -167,35 +182,75 @@ Ext.define("release-tracking-with-filters", {
 
         this.down('#right-area').on('resize', this.onCardboardResize, this);
 
-        let dateRangeArea = this.down('#date-range-area');
-        dateRangeArea.add([{
-            xtype: 'rallydatefield',
-            id: 'start-date-picker',
-            fieldLabel: Constants.START_DATE,
-            labelWidth: 120,
-            labelCls: 'date-label',
-            width: 220,
-            margin: '0 10 0 0',
-            listeners: {
-                scope: this,
-                change: function (cmp, newValue) {
-                    this.timeboxStart = newValue;
-                    this._update();
+        this.down('#date-range-area').add([
+            {
+                xtype: 'container',
+                html: 'ITERATIONS',
+                cls: 'date-label control-label'
+            },
+            {
+                xtype: 'rallydatefield',
+                id: 'start-date-picker',
+                fieldLabel: Constants.START_DATE,
+                labelWidth: 50,
+                labelCls: 'date-label',
+                width: 180,
+                margin: '0 10 5 0',
+                listeners: {
+                    scope: this,
+                    change: function (cmp, newValue) {
+                        this.timeboxStart = newValue;
+                        this._update();
+                    }
                 }
-            }
+            }, {
+                xtype: 'rallydatefield',
+                id: 'end-date-picker',
+                fieldLabel: Constants.END_DATE,
+                labelWidth: 50,
+                width: 180,
+                labelCls: 'date-label',
+                margin: '0 10 0 0',
+                listeners: {
+                    scope: this,
+                    change: function (cmp, newValue) {
+                        this.timeboxEnd = newValue;
+                        this._update();
+                    }
+                }
+            }]);
+
+        this.down('#card-controls-area').add([{
+            xtype: 'container',
+            html: 'BOARD',
+            cls: 'date-label control-label'
         }, {
-            xtype: 'rallydatefield',
-            id: 'end-date-picker',
-            fieldLabel: Constants.END_DATE,
-            labelWidth: 30,
-            width: 130,
-            labelCls: 'date-label',
-            margin: '0 10 0 0',
+            itemId: 'cardTypeCombo',
+            xtype: 'rallycombobox',
+            fieldLabel: 'Card Type',
+            displayField: 'name',
+            valueField: 'value',
+            editable: false,
+            allowBlank: false,
+            labelWidth: 65,
+            width: 200,
+            margin: '0 5 5 0',
+            store: Ext.create('Ext.data.Store', {
+                fields: ['name', 'value'],
+                data: [
+                    { name: 'Features', value: 'Features' },
+                    { name: 'Stories', value: 'Stories' }
+                ]
+            }),
             listeners: {
                 scope: this,
-                change: function (cmp, newValue) {
-                    this.timeboxEnd = newValue;
-                    this._update();
+                change: function () {
+                    if (this.storiesFilter && this.currentIterations) {
+                        this._addPisBoard(this.storiesFilter, this.currentIterations).then({
+                            scope: this,
+                            success: this.onAddPisBoardSuccess
+                        });
+                    }
                 }
             }
         }, {
@@ -206,9 +261,9 @@ Ext.define("release-tracking-with-filters", {
             valueField: 'value',
             editable: false,
             allowBlank: false,
-            labelWidth: 70,
+            labelWidth: 65,
             width: 200,
-            margin: '0 5 0 10',
+            margin: '0 5 0 0',
             store: Ext.create('Ext.data.Store', {
                 fields: ['name', 'value'],
                 data: [
@@ -220,49 +275,62 @@ Ext.define("release-tracking-with-filters", {
                 scope: this,
                 change: function () {
                     if (this.storiesFilter && this.currentIterations) {
-                        this._addPisBoard(this.storiesFilter, this.currentIterations);
+                        this._addPisBoard(this.storiesFilter, this.currentIterations).then({
+                            scope: this,
+                            success: this.onAddPisBoardSuccess
+                        });
                     }
                 }
             }
+        }]);
+
+        this.down('#dependency-controls-area').add([{
+            xtype: 'container',
+            html: 'DEPENDENCIES',
+            cls: 'date-label control-label'
         }, {
-            xtype: 'checkbox',
-            boxLabel: 'Show Story Dependency Lines (<span class="field-content FeatureStoriesPredecessorsAndSuccessors icon-children"></span>)',
-            boxLabelCls: 'date-label dependency-label',
-            labelWidth: 180,
-            width: 250,
-            name: 'dependencies',
-            inputValue: true,
-            itemId: 'storyDependencyCheckbox',
-            cls: 'dependency-checkbox',
-            margin: '0 3 0 20',
-            listeners: {
-                scope: this,
-                change: function (cmp, showLines) {
-                    if (this.previousCancelIcon) {
-                        this.previousDepIcon.setStyle('display', 'inline');
-                        this.previousCancelIcon.setStyle('display', 'none');
-                        this.previousDepIcon = null;
-                        this.previousCancelIcon = null;
-                    }
+            xtype: 'container',
+            layout: 'hbox',
+            items: [{
+                xtype: 'checkbox',
+                boxLabel: 'Show Story Dependency Lines (<span class="field-content FeatureStoriesPredecessorsAndSuccessors icon-children"></span>)',
+                boxLabelCls: 'date-label dependency-label',
+                labelWidth: 180,
+                width: 250,
+                name: 'dependencies',
+                inputValue: true,
+                itemId: 'storyDependencyCheckbox',
+                cls: 'dependency-checkbox',
+                margin: '0 3 5 0',
+                listeners: {
+                    scope: this,
+                    change: function (cmp, showLines) {
+                        if (this.previousCancelIcon) {
+                            this.previousDepIcon.setStyle('display', 'inline');
+                            this.previousCancelIcon.setStyle('display', 'none');
+                            this.previousDepIcon = null;
+                            this.previousCancelIcon = null;
+                        }
 
-                    this.removeDependencyLines();
+                        this.removeDependencyLines();
 
-                    if (showLines) {
-                        this.down('#dependencyFiltersContainer').show();
-                        this.showAllStoryDependencyLines();
-                    } else {
-                        this.down('#dependencyFiltersContainer').hide();
+                        if (showLines) {
+                            this.down('#dependencyFiltersContainer').show();
+                            this.showAllStoryDependencyLines();
+                        } else {
+                            this.down('#dependencyFiltersContainer').hide();
+                        }
                     }
                 }
-            }
-        }, {
-            xtype: 'rallybutton',
-            cls: 'customagile-button help',
-            iconOnly: true,
-            iconCls: 'icon-help',
-            handler: (...args) => this.onHelpClicked(...args),
-            id: 'storyDependencyHelp',
-            margin: '2 15 0 5'
+            }, {
+                xtype: 'rallybutton',
+                cls: 'customagile-button help',
+                iconOnly: true,
+                iconCls: 'icon-help',
+                handler: (...args) => this.onHelpClicked(...args),
+                id: 'storyDependencyHelp',
+                margin: '2 15 0 5'
+            }]
         }, {
             xtype: 'fieldcontainer',
             itemId: 'dependencyFiltersContainer',
@@ -354,8 +422,9 @@ Ext.define("release-tracking-with-filters", {
             }
         });
 
-        this.down('#filter-area').on('collapse', this.onResize, this);
-        this.down('#filter-area').on('expand', this.onResize, this);
+        this.down('#grid-area').on('resize', this._onResize, this);
+        this.down('#filter-area').on('collapse', this._onResize, this);
+        this.down('#filter-area').on('expand', this._onResize, this);
 
         this.addPlugin(this.ancestorFilterPlugin);
     },
@@ -434,17 +503,18 @@ Ext.define("release-tracking-with-filters", {
     },
 
     // Usual monkey business to size gridboards
-    onResize: function () {
+    _onResize: function () {
+        // this.callParent(arguments);
         // Hiding one of the advanced filters throws an error once this method is 
         // called and we try to set the grid height. Waiting a bit first solves this
-        setTimeout(() => {
-            this.callParent(arguments);
+        setTimeout(function () {
+            // this.callParent(arguments);
             let gridArea = this.down('#grid-area');
             let grid = this.down('rallygridboard');
             if (gridArea && grid) {
                 grid.setHeight(gridArea.getHeight());
             }
-        }, 500);
+        }.bind(this), 500);
     },
 
     _updatePisStore: async function () {
@@ -703,21 +773,31 @@ Ext.define("release-tracking-with-filters", {
 
         let boardPromise = this._addPisBoard(this.storiesFilter, this.currentIterations).then({
             scope: this,
-            success: function (board) {
-                for (let def of board.rowDefinitions) {
-                    def.on('collapse', this.onCardboardResize, this);
-                    def.on('expand', this.onCardboardResize, this);
-                }
-
-                if (this._shouldShowStoryDependencies()) {
-                    this.showAllStoryDependencyLines();
-                }
-                else {
-                    this.setLoading(false);
-                }
-            }
+            success: this.onAddPisBoardSuccess
         });
         return boardPromise;
+    },
+
+    onAddPisBoardSuccess: function (board) {
+        if (this.down('#cardTypeCombo').getValue() === 'Stories') {
+            this.buckets = {};
+            let cards = board.getCards();
+            for (let c of cards) {
+                this.buckets[c.getRecord().get('ObjectID')] = c;
+            }
+        }
+
+        for (let def of board.rowDefinitions) {
+            def.on('collapse', this.onCardboardResize, this);
+            def.on('expand', this.onCardboardResize, this);
+        }
+
+        if (this._shouldShowStoryDependencies()) {
+            this.showAllStoryDependencyLines();
+        }
+        else {
+            this.setLoading(false);
+        }
     },
 
     _onPiSelected: function (pi) {
@@ -827,158 +907,176 @@ Ext.define("release-tracking-with-filters", {
                 }
             },
             rowConfig: {
-                field: this.down('#swimlaneCombo').getValue() || 'Project', // this.lowestPiTypeName,// 'FormattedID', // Project
+                field: this.down('#swimlaneCombo').getValue() || 'Project',
                 enableCrossRowDragging: false
             },
             columns: columns,
-            cardConfig: {
-                //  xtype: 'storyfeaturecard',
-                lowestPiTypeName: this.lowestPiTypeName,
-                draggable: false,
-                isHiddenFunc: this._isCardHidden.bind(this),
-                getFeature: function (card) {
+            cardConfig: this.getCardConfig()
+        });
+        return boardDeferred.promise;
+    },
+
+    getCardConfig: function () {
+        if (this.down('#cardTypeCombo').getValue() === 'Stories') {
+            return {};
+        }
+
+        return {
+            xtype: 'storyfeaturecard',
+            lowestPiTypeName: this.lowestPiTypeName,
+            draggable: false,
+            isHiddenFunc: this._isCardHidden.bind(this),
+            getFeature: function (card) {
+                let story = card.getRecord();
+                let featureRef = story.get(this.lowestPiTypeName);
+                let feature = this.piStore.getById(featureRef);
+                return feature;
+            }.bind(this),
+            getAllFeatureStories: function (card) {
+                let cards = this._getCardsForCard(card);
+                return _.map(cards, function (card) {
+                    return card.getRecord();
+                });
+            }.bind(this),
+            getVisibleCard: function (card) {
+                let cards = this._getCardsForCard(card);
+                return cards[0];
+            }.bind(this),
+            listeners: {
+                scope: this,
+                fieldclick: function (fieldName, card) {
+                    let depIcon = card.el.down('.FeatureStoriesPredecessorsAndSuccessors');
+                    let cancelIcon = card.el.down('.FeatureStoriesPredecessorsAndSuccessorsCancel');
+
+                    if (fieldName === 'FeaturePredecessorsAndSuccessors') {
+                        // Show feature to feature dependencies?
+                    }
+                    else if (fieldName === 'FeatureStoriesPredecessorsAndSuccessors') {
+                        if (depIcon && cancelIcon) {
+                            depIcon.setStyle('display', 'none');
+                            cancelIcon.setStyle('display', 'inline');
+                        }
+
+                        if (this.previousDepIcon && this.previousDepIcon !== depIcon) {
+                            this.previousDepIcon.setStyle('display', 'inline');
+                            this.previousCancelIcon.setStyle('display', 'none');
+                        }
+
+                        this.showStoryDependencyLinesForCard(card);
+                    }
+                    else if (fieldName === 'FeatureStoriesPredecessorsAndSuccessorsCancel') {
+                        if (depIcon && cancelIcon) {
+                            depIcon.setStyle('display', 'inline');
+                            cancelIcon.setStyle('display', 'none');
+                        }
+
+                        if (this.previousDepIcon && this.previousDepIcon !== depIcon) {
+                            this.previousDepIcon.setStyle('display', 'inline');
+                            this.previousCancelIcon.setStyle('display', 'none');
+                        }
+
+                        if (this._shouldShowStoryDependencies()) {
+                            this.showAllStoryDependencyLines();
+                        }
+                        else {
+                            this.removeDependencyLines();
+                        }
+                    }
+                    this.previousDepIcon = depIcon;
+                    this.previousCancelIcon = cancelIcon;
+                },
+                story: function (card) {
+                    // TODO (tj) move into StoryFeatureCard
                     let story = card.getRecord();
                     let featureRef = story.get(this.lowestPiTypeName);
                     let feature = this.piStore.getById(featureRef);
-                    return feature;
-                }.bind(this),
-                getAllFeatureStories: function (card) {
-                    let cards = this._getCardsForCard(card);
-                    return _.map(cards, function (card) {
-                        return card.getRecord();
+                    let context = this.getContext().getDataContext();
+                    context.project = story.get('Project')._ref;
+                    let iteration = story.get('Iteration');
+                    let filters = [];
+                    if (iteration) {
+                        filters = [{
+                            property: 'Iteration.Name',
+                            value: iteration.Name
+                        }, {
+                            property: 'Iteration.StartDate',
+                            value: iteration.StartDate
+                        }, {
+                            property: 'Iteration.EndDate',
+                            value: iteration.EndDate
+                        }];
+                    }
+                    else {
+                        filters = [{
+                            property: 'Iteration',
+                            value: null
+                        }];
+                    }
+                    filters.push({
+                        property: 'Project',
+                        value: context.project
                     });
-                }.bind(this),
-                getVisibleCard: function (card) {
-                    let cards = this._getCardsForCard(card);
-                    return cards[0];
-                }.bind(this),
-                listeners: {
-                    scope: this,
-                    fieldclick: function (fieldName, card) {
-                        let depIcon = card.el.down('.FeatureStoriesPredecessorsAndSuccessors');
-                        let cancelIcon = card.el.down('.FeatureStoriesPredecessorsAndSuccessorsCancel');
-
-                        if (fieldName === 'FeaturePredecessorsAndSuccessors') {
-                            // Show feature to feature dependencies?
-                        }
-                        else if (fieldName === 'FeatureStoriesPredecessorsAndSuccessors') {
-                            if (depIcon && cancelIcon) {
-                                depIcon.setStyle('display', 'none');
-                                cancelIcon.setStyle('display', 'inline');
-                            }
-
-                            if (this.previousDepIcon && this.previousDepIcon !== depIcon) {
-                                this.previousDepIcon.setStyle('display', 'inline');
-                                this.previousCancelIcon.setStyle('display', 'none');
-                            }
-
-                            this.showStoryDependencyLinesForCard(card);
-                        }
-                        else if (fieldName === 'FeatureStoriesPredecessorsAndSuccessorsCancel') {
-                            if (depIcon && cancelIcon) {
-                                depIcon.setStyle('display', 'inline');
-                                cancelIcon.setStyle('display', 'none');
-                            }
-
-                            if (this.previousDepIcon && this.previousDepIcon !== depIcon) {
-                                this.previousDepIcon.setStyle('display', 'inline');
-                                this.previousCancelIcon.setStyle('display', 'none');
-                            }
-
-                            if (this._shouldShowStoryDependencies()) {
-                                this.showAllStoryDependencyLines();
-                            }
-                            else {
-                                this.removeDependencyLines();
+                    Rally.ui.popover.PopoverFactory.bake({
+                        field: 'UserStory',
+                        record: feature,
+                        target: card.getEl(),
+                        context: context,
+                        listViewConfig: {
+                            gridConfig: {
+                                storeConfig: {
+                                    filters: filters,
+                                    context: context,
+                                    enablePostGet: true
+                                },
+                                columnCfgs: Constants.STORY_COLUMNS,
                             }
                         }
-                        this.previousDepIcon = depIcon;
-                        this.previousCancelIcon = cancelIcon;
-                    },
-                    story: function (card) {
-                        // TODO (tj) move into StoryFeatureCard
-                        let story = card.getRecord();
-                        let featureRef = story.get(this.lowestPiTypeName);
-                        let feature = this.piStore.getById(featureRef);
-                        let context = this.getContext().getDataContext();
-                        context.project = story.get('Project')._ref;
-                        let iteration = story.get('Iteration');
-                        let filters = [];
-                        if (iteration) {
-                            filters = [{
-                                property: 'Iteration.Name',
-                                value: iteration.Name
-                            }, {
-                                property: 'Iteration.StartDate',
-                                value: iteration.StartDate
-                            }, {
-                                property: 'Iteration.EndDate',
-                                value: iteration.EndDate
-                            }];
-                        }
-                        else {
-                            filters = [{
-                                property: 'Iteration',
-                                value: null
-                            }];
-                        }
-                        filters.push({
-                            property: 'Project',
-                            value: context.project
-                        });
-                        Rally.ui.popover.PopoverFactory.bake({
-                            field: 'UserStory',
-                            record: feature,
-                            target: card.getEl(),
-                            context: context,
-                            listViewConfig: {
-                                gridConfig: {
-                                    storeConfig: {
-                                        filters: filters,
-                                        context: context,
-                                        enablePostGet: true
-                                    },
-                                    columnCfgs: Constants.STORY_COLUMNS,
-                                }
-                            }
-                        });
-                    },
-                }
+                    });
+                },
             }
-        });
-        return boardDeferred.promise;
+        }
     },
 
     showAllStoryDependencyLines: function () {
         let def = Ext.create('Deft.Deferred');
         let board = this.down('#releaseGridboard');
+        let isFeatureCards = this.down('#cardTypeCombo').getValue() === 'Features';
 
         if (board) {
             this.removeDependencyLines();
 
             this.setLoading('Drawing Dependencies');
+            let cards = board.getCards();
 
-            this.getAllStoryPredecessors(board).then({
+            this.getAllStoryPredecessors(cards).then({
                 scope: this,
                 success: function (storyPredObjArray) {
                     if (storyPredObjArray.length) {
                         let lines = [];
 
                         _.each(storyPredObjArray, function (storyPredObj) {
-                            let successorCard = storyPredObj.card.getVisibleCard(storyPredObj.card);
+                            let successorCard = isFeatureCards ? storyPredObj.card.getVisibleCard(storyPredObj.card) : storyPredObj.card;
 
                             _.each(storyPredObj.predecessors, function (pred) {
-                                let key = this._getRecordBucketKey(pred);
+                                if (isFeatureCards) {
+                                    let key = this._getRecordBucketKey(pred);
+                                    if (this.buckets.hasOwnProperty(key)) {
+                                        let predecessorCard = this.buckets[key][0];
 
-                                if (this.buckets.hasOwnProperty(key)) {
-                                    let predecessorCard = this.buckets[key][0];
+                                        // Skip self-dependencies
+                                        if (predecessorCard === successorCard) {
+                                            return;
+                                        }
 
-                                    // Skip self-dependencies
-                                    if (predecessorCard === successorCard) {
-                                        return;
+                                        lines = lines.concat(this.generateDependencyLine(predecessorCard, successorCard));
                                     }
+                                }
+                                else {
+                                    let predecessorCard = this.buckets[pred.get('ObjectID')];
 
-                                    lines = lines.concat(this.generateDependencyLine(predecessorCard, successorCard));
+                                    if (predecessorCard && predecessorCard !== successorCard) {
+                                        lines = lines.concat(this.generateDependencyLine(predecessorCard, successorCard));
+                                    }
                                 }
                             }, this);
                         }, this);
@@ -1187,15 +1285,15 @@ Ext.define("release-tracking-with-filters", {
         return items;
     },
 
-    getAllStoryPredecessors: function (board) {
+    getAllStoryPredecessors: function (cards) {
         let def = Ext.create('Deft.Deferred');
-        let cards = board.getCards();
+        let isFeatureCards = this.down('#cardTypeCombo').getValue() === 'Features';
 
         if (cards.length) {
             let promises = [];
 
             for (let card of cards) {
-                let storyCards = this._getCardsForCard(card);
+                let storyCards = isFeatureCards ? this._getCardsForCard(card) : [card];
 
                 _.each(storyCards, function (item) {
                     let story = item.getRecord();
@@ -1274,7 +1372,7 @@ Ext.define("release-tracking-with-filters", {
             id: 'dep',
             viewBox: false,
             floating: false,
-            height: gridboard.getHeight(),
+            height: gridboard.getHeight() + 100,
             width: gridboard.getWidth() + 40,
             items: items
         });

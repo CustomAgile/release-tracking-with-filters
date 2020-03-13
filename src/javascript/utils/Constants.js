@@ -6,8 +6,8 @@ Ext.define('Constants', {
         RELEASE_CONTROL_LABEL: 'Release Tracking',
         RELEASE_CONTROL_LABEL_CLASS: 'ts-page-label',
         UNSCHEDULED: 'Unscheduled',
-        START_DATE: 'Iterations from',
-        END_DATE: 'to',
+        START_DATE: 'From',
+        END_DATE: 'To',
         PORTFOLIO_ITEMS: 'Portfolio Items'
     }
 })

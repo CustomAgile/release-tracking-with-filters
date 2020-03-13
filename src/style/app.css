@@ -40,6 +40,12 @@
     text-transform: uppercase;
 }
 
+.control-label {
+    width: 100%;
+    text-align: center;
+    padding-bottom: 4px;
+}
+
 .dependency-label {
     margin-left: 20px;
 }
