@@ -391,7 +391,8 @@ Ext.define("release-tracking-with-filters", {
             whiteListFields: [
                 'Tags',
                 'Milestones',
-                'c_EnterpriseApprovalEA'
+                'c_EnterpriseApprovalEA',
+                'c_EAEpic'
             ],
             filtersHidden: false,
             visibleTab: 'PortfolioItem/Feature',
@@ -679,7 +680,8 @@ Ext.define("release-tracking-with-filters", {
                             whiteListFields: [
                                 'Tags',
                                 'Milestones',
-                                'c_EnterpriseApprovalEA'
+                                'c_EnterpriseApprovalEA',
+                                'c_EAEpic'
                             ]
                         }
                     }
