@@ -172,3 +172,27 @@ li {
 .customagile-button.help {
     padding: 0;
 }
+
+#board-area { 
+    height: 100%; 
+    overflow-y: scroll !important;
+}
+
+#board-area>.rui-gridboard {
+    height: 100%;
+    overflow-y: hidden;
+}
+
+.fixed-header-card-board-body-container {
+    position: relative;
+}
+
+.ts-card-table {
+    width: 100%;
+    margin: 4px 1px;
+    table-layout: auto !important;
+}
+
+.ts-card-table tr {
+    width: 100%;
+}

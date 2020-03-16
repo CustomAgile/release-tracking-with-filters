@@ -511,9 +511,14 @@ Ext.define("release-tracking-with-filters", {
         setTimeout(function () {
             // this.callParent(arguments);
             let gridArea = this.down('#grid-area');
+            let boardArea = this.down('#board-area');
+            let rightArea = this.down('#right-area');
+            let controlsArea = this.down('#controls-area');
             let grid = this.down('rallygridboard');
-            if (gridArea && grid) {
+            if (gridArea && grid && rightArea) {
                 grid.setHeight(gridArea.getHeight());
+                rightArea.setHeight(gridArea.getHeight());
+                boardArea.setHeight(rightArea.getHeight() - controlsArea.getHeight());
             }
         }.bind(this), 500);
     },
@@ -800,6 +805,8 @@ Ext.define("release-tracking-with-filters", {
         else {
             this.setLoading(false);
         }
+
+        this._onResize();
     },
 
     _onPiSelected: function (pi) {
@@ -890,9 +897,12 @@ Ext.define("release-tracking-with-filters", {
 
         this.board = boardArea.add({
             xtype: 'rallycardboard',
+            height: this.down('#right-area').getHeight(),
             itemId: 'releaseGridboard',
             type: ['HierarchicalRequirement'],
+            plugins: [{ ptype: 'rallyfixedheadercardboard' }],
             attribute: 'Iteration',
+            overflowY: 'hidden',
             storeConfig: {
                 filters: filter,
                 fetch: [this.lowestPiTypeName].concat(Constants.STORIES_FETCH),
