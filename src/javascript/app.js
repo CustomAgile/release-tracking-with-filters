@@ -910,6 +910,7 @@ Ext.define("release-tracking-with-filters", {
             },
             rowConfig: {
                 field: this.down('#swimlaneCombo').getValue() || 'Project',
+                sortField: this.down('#swimlaneCombo').getValue() === 'Feature' ? 'DragAndDropRank' : null,
                 enableCrossRowDragging: false
             },
             columns: columns,
