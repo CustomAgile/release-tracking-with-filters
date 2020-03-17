@@ -1188,6 +1188,10 @@ Ext.define("release-tracking-with-filters", {
         let rightAreaEl = this.down('#right-area').getEl();
         let rightAreaScroll = rightAreaEl.getScroll();
         let boardArea = this.down('#board-area');
+        let boardAreaScroll = boardArea.getEl().getScroll();
+        let boardAreaButtons = boardArea.getEl().dom.getElementsByClassName('rui-leftright');
+        let buttonAreaHeight = (boardAreaButtons && boardAreaButtons.length) ? boardAreaButtons[0].getBoundingClientRect().height : 0;
+        let cbBody = this.getCardboardBody();
 
         // Yellow line if the dependencies are in the same iteration
         if (predX === succX) {
@@ -1210,8 +1214,8 @@ Ext.define("release-tracking-with-filters", {
             return [];
         }
 
-        let xOffset = -boardArea.getX() + boardArea.getEl().getMargin().left;
-        let yOffset = -rightAreaEl.getY() + rightAreaScroll.top;
+        let xOffset = -boardArea.getX() + boardArea.getEl().getMargin().left + boardAreaScroll.left + cbBody.getScrollLeft();
+        let yOffset = -rightAreaEl.getY() + rightAreaScroll.top + boardAreaScroll.top + cbBody.getScrollTop() - buttonAreaHeight - 1;
 
         if (predY === succY) {
             predY += cardHeight / 2 + yOffset;
@@ -1376,22 +1380,31 @@ Ext.define("release-tracking-with-filters", {
     },
 
     drawDependencies: function (items) {
-        let boardArea = this.down('#board-area');
-        let gridboard = this.down('#releaseGridboard');
+
+        let cbHeader = this.getCardboardHeader();
+        let cbBody = this.getCardboardBody();
+        let yOffset = -cbHeader.getHeight() - 100;
+        let xOffset = -20;
 
         this.drawComponent = Ext.create('Ext.draw.Component', {
-            style: Ext.String.format('position:absolute; top:{0}px; left:{1}px;z-index:1000;pointer-events:none', 0, 0),
+            renderTo: cbBody,
+            style: Ext.String.format('position:absolute; top:{0}px; left:{1}px;z-index:1000;pointer-events:none', yOffset, xOffset),
             itemId: 'dependencies',
             id: 'dep',
             viewBox: false,
             floating: false,
-            height: gridboard.getHeight() + 100,
-            width: gridboard.getWidth() + 40,
+            height: cbBody.dom.firstElementChild.clientHeight,
+            width: cbBody.getWidth() + 40,
             items: items
         });
+    },
 
-        boardArea.add(this.drawComponent);
-        this.drawComponent.show();
+    getCardboardBody: function () {
+        return this.board && this.board.getEl().down('.fixed-header-card-board-body-container');
+    },
+
+    getCardboardHeader: function () {
+        return this.board && this.board.getEl().down('.fixed-header-card-board-header-container');
     },
 
     _getCardBucketKey: function (card) {
@@ -1511,7 +1524,7 @@ Ext.define("release-tracking-with-filters", {
 
     removeDependencyLines: function () {
         if (this.drawComponent) {
-            this.down('#board-area').remove(this.drawComponent);
+            Ext.destroy(this.drawComponent);
         }
     },
 
