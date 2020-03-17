@@ -227,6 +227,9 @@ Ext.define("release-tracking-with-filters", {
         }, {
             itemId: 'cardTypeCombo',
             xtype: 'rallycombobox',
+            stateful: true,
+            stateId: this.context.getScopedStateId('ReleaseTrackingWithFilters.CardTypeCombo'),
+            stateEvents: ['change'],
             fieldLabel: 'Card Type',
             displayField: 'name',
             valueField: 'value',
@@ -256,6 +259,9 @@ Ext.define("release-tracking-with-filters", {
         }, {
             itemId: 'swimlaneCombo',
             xtype: 'rallycombobox',
+            stateful: true,
+            stateId: this.context.getScopedStateId('ReleaseTrackingWithFilters.SwimlaneCombo'),
+            stateEvents: ['change'],
             fieldLabel: 'Swimlanes',
             displayField: 'name',
             valueField: 'value',
@@ -295,6 +301,9 @@ Ext.define("release-tracking-with-filters", {
                 xtype: 'checkbox',
                 boxLabel: 'Show Story Dependency Lines (<span class="field-content FeatureStoriesPredecessorsAndSuccessors icon-children"></span>)',
                 boxLabelCls: 'date-label dependency-label',
+                stateful: true,
+                stateId: this.context.getScopedStateId('ReleaseTrackingWithFilters.ShowDependenciesCheckbox'),
+                stateEvents: ['change'],
                 labelWidth: 180,
                 width: 250,
                 name: 'dependencies',
@@ -349,6 +358,9 @@ Ext.define("release-tracking-with-filters", {
                 {
                     fieldLabel: 'Grey',
                     id: 'greyLineFilter',
+                    stateful: true,
+                    stateId: this.context.getScopedStateId('ReleaseTrackingWithFilters.ShowGreyDependenciesCheckbox'),
+                    stateEvents: ['change'],
                     width: 56,
                     labelWidth: 28,
                     checked: true,
@@ -360,6 +372,9 @@ Ext.define("release-tracking-with-filters", {
                 }, {
                     fieldLabel: 'Yellow',
                     id: 'yellowLineFilter',
+                    stateful: true,
+                    stateId: this.context.getScopedStateId('ReleaseTrackingWithFilters.ShowYellowDependenciesCheckbox'),
+                    stateEvents: ['change'],
                     width: 60,
                     labelWidth: 35,
                     checked: true,
@@ -370,6 +385,9 @@ Ext.define("release-tracking-with-filters", {
                 }, {
                     fieldLabel: 'Red',
                     id: 'redLineFilter',
+                    stateful: true,
+                    stateId: this.context.getScopedStateId('ReleaseTrackingWithFilters.ShowRedDependenciesCheckbox'),
+                    stateEvents: ['change'],
                     width: 60,
                     labelWidth: 26,
                     checked: true,
@@ -800,6 +818,7 @@ Ext.define("release-tracking-with-filters", {
         }
 
         if (this._shouldShowStoryDependencies()) {
+            this.down('#dependencyFiltersContainer').show();
             this.showAllStoryDependencyLines();
         }
         else {

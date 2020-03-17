@@ -63,4 +63,19 @@ Ext.override(Rally.ui.cardboard.plugin.CardPopover, {
 
 Rally.ui.popover.PopoverFactory.popovers['FeatureStoriesDependenciesPopover'] = function (config) {
     return Ext.create('FeatureStoriesDependenciesPopover', this._getConfig(config));
-}
+};
+
+
+// Would be nice if Checkboxes were stateful out of the box...
+Ext.override(Ext.form.field.Checkbox, {
+    getState: function () {
+        return { checked: this.getValue() };
+    },
+    applyState: function (state) {
+        if (typeof state.checked === 'boolean') {
+            this.suspendEvents(false);
+            this.setValue(state.checked);
+            this.resumeEvents();
+        }
+    }
+});
