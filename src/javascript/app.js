@@ -1412,7 +1412,7 @@ Ext.define("release-tracking-with-filters", {
             id: 'dep',
             viewBox: false,
             floating: false,
-            height: cbBody.dom.firstElementChild.clientHeight,
+            height: cbBody.dom.firstElementChild.clientHeight + 200,
             width: cbBody.getWidth() + 40,
             items: items
         });
