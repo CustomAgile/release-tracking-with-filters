@@ -410,7 +410,8 @@ Ext.define("release-tracking-with-filters", {
                 'Tags',
                 'Milestones',
                 'c_EnterpriseApprovalEA',
-                'c_EAEpic'
+                'c_EAEpic',
+                'DisplayColor'
             ],
             filtersHidden: false,
             visibleTab: 'PortfolioItem/Feature',
@@ -950,7 +951,17 @@ Ext.define("release-tracking-with-filters", {
 
     getCardConfig: function () {
         if (this.down('#cardTypeCombo').getValue() === 'Stories') {
-            return {};
+            return {
+                fields: ['Feature', 'Project']
+            };
+            // let config = {};
+            // if (this.down('#swimlaneCombo').getValue() === 'Project') {
+            //     config.fields = ['Feature'];
+            // }
+            // else {
+            //     config.fields = ['Project'];
+            // }
+            // return config;
         }
 
         return {
