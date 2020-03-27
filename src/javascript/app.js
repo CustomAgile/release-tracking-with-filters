@@ -58,6 +58,7 @@ Ext.define("release-tracking-with-filters", {
         },
         cls: 'grid-area',
         title: Constants.PORTFOLIO_ITEMS,
+        // width: 350,
         flex: 1,
         layout: {
             type: 'vbox',
@@ -88,7 +89,7 @@ Ext.define("release-tracking-with-filters", {
             layout: 'hbox',
             minWidth: 950,
             minHeight: 100,
-            padding: '10 0 10 20',
+            margin: '0 0 10 20',
             items: [{
                 id: 'date-range-area',
                 xtype: 'container',
@@ -292,45 +293,11 @@ Ext.define("release-tracking-with-filters", {
 
         this.down('#dependency-controls-area').add([{
             xtype: 'container',
-            html: 'DEPENDENCIES',
-            cls: 'date-label control-label'
-        }, {
-            xtype: 'container',
             layout: 'hbox',
             items: [{
-                xtype: 'checkbox',
-                boxLabel: 'Show Story Dependency Lines (<span class="field-content FeatureStoriesPredecessorsAndSuccessors icon-children"></span>)',
-                boxLabelCls: 'date-label dependency-label',
-                stateful: true,
-                stateId: this.context.getScopedStateId('ReleaseTrackingWithFilters.ShowDependenciesCheckbox'),
-                stateEvents: ['change'],
-                labelWidth: 180,
-                width: 250,
-                name: 'dependencies',
-                inputValue: true,
-                itemId: 'storyDependencyCheckbox',
-                cls: 'dependency-checkbox',
-                margin: '0 3 5 0',
-                listeners: {
-                    scope: this,
-                    change: function (cmp, showLines) {
-                        if (this.previousCancelIcon) {
-                            this.previousDepIcon.setStyle('display', 'inline');
-                            this.previousCancelIcon.setStyle('display', 'none');
-                            this.previousDepIcon = null;
-                            this.previousCancelIcon = null;
-                        }
-
-                        this.removeDependencyLines();
-
-                        if (showLines) {
-                            this.down('#dependencyFiltersContainer').show();
-                            this.showAllStoryDependencyLines();
-                        } else {
-                            this.down('#dependencyFiltersContainer').hide();
-                        }
-                    }
-                }
+                xtype: 'container',
+                html: 'DEPENDENCIES',
+                cls: 'date-label control-label'
             }, {
                 xtype: 'rallybutton',
                 cls: 'customagile-button help',
@@ -338,8 +305,107 @@ Ext.define("release-tracking-with-filters", {
                 iconCls: 'icon-help',
                 handler: (...args) => this.onHelpClicked(...args),
                 id: 'storyDependencyHelp',
-                margin: '2 15 0 5'
+                margin: '0 0 0 5'
             }]
+        },
+        // {
+        // xtype: 'container',
+        // layout: 'hbox',
+        //     items: [
+        {
+            xtype: 'checkbox',
+            stateful: true,
+            stateId: this.context.getScopedStateId('ReleaseTrackingWithFilters.ShowOnlyFeaturesWithDependenciesCheckbox'),
+            stateEvents: ['change'],
+            boxLabel: 'Only show Features w/ Dependencies',
+            boxLabelCls: 'dependency-label',
+            labelWidth: 255,
+            //labelAlign: 'right',
+            width: 275,
+            name: 'onlyFeaturesWithDependencies',
+            inputValue: true,
+            itemId: 'onlyFeaturesWithDependenciesCheckbox',
+            cls: 'dependency-checkbox',
+            margin: '0 3 3 0',
+            listeners: {
+                scope: this,
+                change: function (cmp, showLines) {
+                    if (this.previousCancelIcon) {
+                        this.previousDepIcon.setStyle('display', 'inline');
+                        this.previousCancelIcon.setStyle('display', 'none');
+                        this.previousDepIcon = null;
+                        this.previousCancelIcon = null;
+                    }
+
+                    this.removeDependencyLines();
+                    this._update();
+                }
+            }
+        }, {
+            xtype: 'checkbox',
+            stateful: true,
+            stateId: this.context.getScopedStateId('ReleaseTrackingWithFilters.ShowOnlyStoriesWithDependenciesCheckbox'),
+            stateEvents: ['change'],
+            boxLabel: 'Only show Stories w/ Dependencies',
+            boxLabelCls: 'dependency-label',
+            labelWidth: 255,
+            //labelAlign: 'right',
+            width: 275,
+            name: 'onlyStoriesWithDependencies',
+            inputValue: true,
+            itemId: 'onlyStoriesWithDependenciesCheckbox',
+            cls: 'dependency-checkbox',
+            margin: '0 3 3 0',
+            listeners: {
+                scope: this,
+                change: function (cmp, showLines) {
+                    if (this.previousCancelIcon) {
+                        this.previousDepIcon.setStyle('display', 'inline');
+                        this.previousCancelIcon.setStyle('display', 'none');
+                        this.previousDepIcon = null;
+                        this.previousCancelIcon = null;
+                    }
+
+                    this.removeDependencyLines();
+                    this._update();
+                }
+            }
+        }, {
+            xtype: 'checkbox',
+            stateful: true,
+            stateId: this.context.getScopedStateId('ReleaseTrackingWithFilters.ShowDependenciesCheckbox'),
+            stateEvents: ['change'],
+            boxLabel: 'Show Story Dependency Lines (<span class="field-content FeatureStoriesPredecessorsAndSuccessors icon-children"></span>)',
+            boxLabelCls: 'dependency-label',
+            labelWidth: 255,
+            // labelAlign: 'right',
+            width: 275,
+            name: 'dependencies',
+            inputValue: true,
+            itemId: 'storyDependencyCheckbox',
+            cls: 'dependency-checkbox',
+            margin: '0 3 3 0',
+            listeners: {
+                scope: this,
+                change: function (cmp, showLines) {
+                    if (this.previousCancelIcon) {
+                        this.previousDepIcon.setStyle('display', 'inline');
+                        this.previousCancelIcon.setStyle('display', 'none');
+                        this.previousDepIcon = null;
+                        this.previousCancelIcon = null;
+                    }
+
+                    this.removeDependencyLines();
+
+                    if (showLines) {
+                        this.down('#dependencyFiltersContainer').show();
+                        this.showAllStoryDependencyLines();
+                    } else {
+                        this.down('#dependencyFiltersContainer').hide();
+                    }
+                }
+            }
+            //}]
         }, {
             xtype: 'fieldcontainer',
             itemId: 'dependencyFiltersContainer',
@@ -411,7 +477,8 @@ Ext.define("release-tracking-with-filters", {
                 'Milestones',
                 'c_EnterpriseApprovalEA',
                 'c_EAEpic',
-                'DisplayColor'
+                'DisplayColor',
+                'Predecessors'
             ],
             filtersHidden: false,
             visibleTab: 'PortfolioItem/Feature',
@@ -443,6 +510,7 @@ Ext.define("release-tracking-with-filters", {
         });
 
         this.down('#grid-area').on('resize', this._onResize, this);
+        this.down('#controls-area').on('resize', this._onResize, this);
         this.down('#filter-area').on('collapse', this._onResize, this);
         this.down('#filter-area').on('expand', this._onResize, this);
 
@@ -476,7 +544,7 @@ Ext.define("release-tracking-with-filters", {
         // Delete piRecord to avoid recursive stack overflow error
         delete ancestorData.piRecord;
 
-        let gridView = this.down('rallygridboard').getCurrentView();
+        let gridView = this.down('#pisGrid').getCurrentView();
         let views = Ext.apply(gridView, ancestorData);
 
         return views;
@@ -497,7 +565,7 @@ Ext.define("release-tracking-with-filters", {
             app.ancestorFilterPlugin.setMultiLevelFilterStates(view.filterStates);
             app.ancestorFilterPlugin._setPiSelector(view.piTypePath, view.pi);
         }
-        this.down('rallygridboard').setCurrentView(view);
+        this.down('#pisGrid').setCurrentView(view);
 
         setTimeout(async function () {
             Ext.resumeLayouts(true);
@@ -522,22 +590,27 @@ Ext.define("release-tracking-with-filters", {
         }
     },
 
-    // Usual monkey business to size gridboards
     _onResize: function () {
-        // this.callParent(arguments);
         // Hiding one of the advanced filters throws an error once this method is 
         // called and we try to set the grid height. Waiting a bit first solves this
         setTimeout(function () {
-            // this.callParent(arguments);
+            // this.is_a_nightmare() === true
             let gridArea = this.down('#grid-area');
+            let grid = this.down('#pisGrid');
+
+            if (gridArea && grid) {
+                grid.setHeight(gridArea.getHeight());
+            }
+
             let boardArea = this.down('#board-area');
             let rightArea = this.down('#right-area');
             let controlsArea = this.down('#controls-area');
-            let grid = this.down('rallygridboard');
-            if (gridArea && grid && rightArea) {
-                grid.setHeight(gridArea.getHeight());
-                rightArea.setHeight(gridArea.getHeight());
-                boardArea.setHeight(rightArea.getHeight() - controlsArea.getHeight());
+            let board = this.down('#releaseCardboard');
+
+            if (rightArea && controlsArea && boardArea && board) {
+                boardArea.setHeight(rightArea.getHeight() - ((controlsArea.getOuterSize() && controlsArea.getOuterSize().height) || 0));
+                board.setHeight(boardArea.getHeight() - 20);
+                boardArea.setWidth(rightArea.getWidth() - 20);
             }
         }.bind(this), 500);
     },
@@ -558,7 +631,7 @@ Ext.define("release-tracking-with-filters", {
         this.piStore = await Ext.create('Rally.data.wsapi.TreeStoreBuilder').build({
             models: [this.lowestPiTypePath],
             autoLoad: false,
-            fetch: Constants.FEATURE_FETCH,
+            fetch: true, // This solves the issue with the field picker loading new columns with no data in them
             filters: this.currentPiQueries,
             enableHierarchy: true,
             remoteSort: true,
@@ -621,6 +694,38 @@ Ext.define("release-tracking-with-filters", {
             queries = queries.concat(Rally.data.QueryFilter.fromQueryString(this.getSetting('query')));
         }
 
+        if (this.down('#onlyFeaturesWithDependenciesCheckbox').getValue()) {
+            let depQuery = Ext.create('Rally.data.wsapi.Filter', {
+                property: 'Predecessors.ObjectID',
+                operator: '!=',
+                value: null
+            });
+
+            depQuery = depQuery.or(Ext.create('Rally.data.wsapi.Filter', {
+                property: 'Successors.ObjectID',
+                operator: '!=',
+                value: null
+            }));
+
+            queries.push(depQuery);
+        }
+
+        if (this.down('#onlyStoriesWithDependenciesCheckbox').getValue()) {
+            let storyDepQuery = Ext.create('Rally.data.wsapi.Filter', {
+                property: 'UserStories.Predecessors.ObjectID',
+                operator: '!=',
+                value: null
+            });
+
+            storyDepQuery = storyDepQuery.or(Ext.create('Rally.data.wsapi.Filter', {
+                property: 'UserStories.Successors.ObjectID',
+                operator: '!=',
+                value: null
+            }));
+
+            queries.push(storyDepQuery);
+        }
+
         return queries;
     },
 
@@ -636,6 +741,7 @@ Ext.define("release-tracking-with-filters", {
         }]);
         this.iterationsStore = Ext.create('Rally.data.wsapi.Store', {
             model: 'Iteration',
+            fetch: ['Name', 'StartDate', 'EndDate'],
             autoLoad: false,
             filters: filter,
             context: this.getContext().getDataContext(),
@@ -738,6 +844,7 @@ Ext.define("release-tracking-with-filters", {
                 storeConfig: {
                     context: this.currentDataContext,
                     filters: this.currentPiQueries,
+                    fetch: true,
                     enablePostGet: true,
                     pageSize: 2000,
                     limit: Infinity
@@ -796,6 +903,22 @@ Ext.define("release-tracking-with-filters", {
             property: 'Parent',
             value: null
         });
+
+        if (this.down('#onlyStoriesWithDependenciesCheckbox').getValue()) {
+            let storyDepQuery = Ext.create('Rally.data.wsapi.Filter', {
+                property: 'Predecessors.ObjectID',
+                operator: '!=',
+                value: null
+            });
+
+            storyDepQuery = storyDepQuery.or(Ext.create('Rally.data.wsapi.Filter', {
+                property: 'Successors.ObjectID',
+                operator: '!=',
+                value: null
+            }));
+
+            this.storiesFilter = this.storiesFilter.and(storyDepQuery);
+        }
 
         let boardPromise = this._addPisBoard(this.storiesFilter, this.currentIterations).then({
             scope: this,
@@ -917,8 +1040,8 @@ Ext.define("release-tracking-with-filters", {
 
         this.board = boardArea.add({
             xtype: 'rallycardboard',
-            height: this.down('#right-area').getHeight(),
-            itemId: 'releaseGridboard',
+            height: this.down('#board-area').getHeight(),
+            itemId: 'releaseCardboard',
             type: ['HierarchicalRequirement'],
             plugins: [{ ptype: 'rallyfixedheadercardboard' }],
             attribute: 'Iteration',
@@ -1082,7 +1205,7 @@ Ext.define("release-tracking-with-filters", {
 
     showAllStoryDependencyLines: function () {
         let def = Ext.create('Deft.Deferred');
-        let board = this.down('#releaseGridboard');
+        let board = this.down('#releaseCardboard');
         let isFeatureCards = this.down('#cardTypeCombo').getValue() === 'Features';
 
         if (board) {
@@ -1413,7 +1536,7 @@ Ext.define("release-tracking-with-filters", {
 
         let cbHeader = this.getCardboardHeader();
         let cbBody = this.getCardboardBody();
-        let yOffset = -cbHeader.getHeight() - 100;
+        let yOffset = -cbHeader.getHeight() - 120;
         let xOffset = -20;
 
         this.drawComponent = Ext.create('Ext.draw.Component', {
@@ -1524,7 +1647,7 @@ Ext.define("release-tracking-with-filters", {
     },
 
     onCardboardResize: function () {
-        let board = this.down('#releaseGridboard');
+        let board = this.down('#releaseCardboard');
 
         if (board) {
             this.removeDependencyLines();

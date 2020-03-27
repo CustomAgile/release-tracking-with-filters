@@ -105,9 +105,10 @@ Ext.define('TsExportGrid', {
         }
     },
     _getExportFilters: async function () {
+        var app = Rally.getApp();
         var grid = this._getGrid(),
             filters = [],
-            query = Rally.getApp().getSetting('query');
+            query = app.getSetting('query');
 
         if (grid.currentCustomFilter && grid.currentCustomFilter.filters) {
             // Concat any current custom filters (don't assign as we don't want to modify the currentCustomFilter array)
@@ -127,6 +128,38 @@ Ext.define('TsExportGrid', {
         var timeboxScope = this.context.getTimeboxScope();
         if (timeboxScope && timeboxScope.isApplicable(grid.getGridOrBoard().store.model)) {
             filters.push(timeboxScope.getQueryFilter());
+        }
+
+        if (app.down('#onlyFeaturesWithDependenciesCheckbox').getValue()) {
+            let depQuery = Ext.create('Rally.data.wsapi.Filter', {
+                property: 'Predecessors.ObjectID',
+                operator: '!=',
+                value: null
+            });
+
+            depQuery = depQuery.or(Ext.create('Rally.data.wsapi.Filter', {
+                property: 'Successors.ObjectID',
+                operator: '!=',
+                value: null
+            }));
+
+            filters.push(depQuery);
+        }
+
+        if (app.down('#onlyStoriesWithDependenciesCheckbox').getValue()) {
+            let storyDepQuery = Ext.create('Rally.data.wsapi.Filter', {
+                property: 'UserStories.Predecessors.ObjectID',
+                operator: '!=',
+                value: null
+            });
+
+            storyDepQuery = storyDepQuery.or(Ext.create('Rally.data.wsapi.Filter', {
+                property: 'UserStories.Successors.ObjectID',
+                operator: '!=',
+                value: null
+            }));
+
+            filters.push(storyDepQuery);
         }
 
         return filters;

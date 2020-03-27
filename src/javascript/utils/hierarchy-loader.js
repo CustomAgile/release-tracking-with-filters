@@ -15,7 +15,7 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
 
     maxParallelCalls: 6,
 
-    constructor: function(config) {
+    constructor: function (config) {
         this.mixins.observable.constructor.call(this, config);
         this.portfolioItemTypes = config.portfolioItemTypes || [];
         this.model = config.model || null;
@@ -24,7 +24,7 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
         this.loadChildModels = config.loadChildModels || [];
         this.sorters = config.sorters || [];
     },
-    load: function() {
+    load: function () {
 
         if (!this.model) {
             this.fireEvent('hierarchyloaderror', "No model specified.");
@@ -45,16 +45,16 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
         }
 
         Deft.Chain.pipeline(fns, this).then({
-            success: function() {
+            success: function () {
                 this.fireEvent('hierarchyloadcomplete');
             },
-            failure: function(msg) {
+            failure: function (msg) {
                 this.fireEvent('hierarchyloaderror', msg);
             },
             scope: this
         });
     },
-    fetchNextLevel: function(args) {
+    fetchNextLevel: function (args) {
         if (!args) {
             return this.fetchRoot();
         }
@@ -63,13 +63,13 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
 
         if (args.length > 0 && Ext.isFunction(args[0].get)) {
             var type = args[0].get('_type');
-            var types = Ext.Array.unique(Ext.Array.map(args, function(arg) { return arg.get('_type'); }));
+            var types = Ext.Array.unique(Ext.Array.map(args, function (arg) { return arg.get('_type'); }));
 
             this.fireEvent('hierarchyloadartifactsloaded', type, args);
 
-            var portfolioItemTypePaths = _.map(this.portfolioItemTypes, function(type) {
-                    return type.get('TypePath').toLowerCase();
-                }),
+            var portfolioItemTypePaths = _.map(this.portfolioItemTypes, function (type) {
+                return type.get('TypePath').toLowerCase();
+            }),
                 portfolioItemOrdinal = _.indexOf(portfolioItemTypePaths, type);
 
             if (portfolioItemOrdinal === 0 && Ext.Array.contains(this.loadChildModels, this.storyModelName)) {
@@ -88,7 +88,7 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
         return [];
     },
 
-    fetchRoot: function() {
+    fetchRoot: function () {
         var fetch = this.fetch.concat(this.getRequiredFetchFields(this.model));
         this.fireEvent('statusupdate', "Loading artifacts");
         var config = {
@@ -101,14 +101,14 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
 
         return this.fetchWsapiRecords(config);
     },
-    fetchPortfolioItems: function(type, parentRecords) {
+    fetchPortfolioItems: function (type, parentRecords) {
 
         var fetch = this.fetch.concat(this.getRequiredFetchFields(type)),
             chunks = this._getChunks(parentRecords, 'Children', 'Count');
 
         return this.fetchChunks(type, fetch, chunks, "Parent.ObjectID", Ext.String.format("Please Wait... Loading Children for {0} Portfolio Items", parentRecords.length));
     },
-    _getChunks: function(parentRecords, countField, countFieldAttribute) {
+    _getChunks: function (parentRecords, countField, countFieldAttribute) {
 
         var chunks = [],
             childCount = 0,
@@ -117,7 +117,7 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
             idx = 0;
 
         chunks[idx] = [];
-        _.each(parentRecords, function(r) {
+        _.each(parentRecords, function (r) {
             var count = r.get(countField);
             if (countFieldAttribute && count) {
                 count = count[countFieldAttribute];
@@ -135,7 +135,7 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
 
         return chunks;
     },
-    fetchUserStories: function(parentRecords) {
+    fetchUserStories: function (parentRecords) {
         var type = this.storyModelName,
             fetch = this.fetch.concat(this.getRequiredFetchFields(type)),
             chunks = this._getChunks(parentRecords, 'LeafStoryCount'),
@@ -144,16 +144,16 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
         return this.fetchChunks(type, fetch, chunks, featureParentName, Ext.String.format("Please Wait... Loading User Stories for {0} Portfolio Items", parentRecords.length));
     },
 
-    fetchChildrenFromMultipleTypes: function(types, parentRecords) {
+    fetchChildrenFromMultipleTypes: function (types, parentRecords) {
 
         var promises = [];
-        Ext.Array.map(types, function(type) {
+        Ext.Array.map(types, function (type) {
             child_types = this.getAllowedChildTypes(type);
             if (child_types.length > 0) {
-                var parents = Ext.Array.filter(parentRecords, function(parent) {
+                var parents = Ext.Array.filter(parentRecords, function (parent) {
                     return (parent.get('_type') == type);
                 }, this);
-                promises.push(function() {
+                promises.push(function () {
                     return this.fetchChildrenOfMultipleTypes(parents);
                 });
             }
@@ -162,17 +162,17 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
         if (promises.length === 0) { return []; }
         return Deft.Chain.sequence(promises, this);
     },
-    fetchChildrenOfMultipleTypes: function(parentRecords) {
+    fetchChildrenOfMultipleTypes: function (parentRecords) {
         var parent_type = parentRecords[0].get('_type');
         var child_types = this.getAllowedChildTypes(parent_type);
-        var promises = Ext.Array.map(child_types, function(type) {
-            return function() { return this.fetchChildren(type, parentRecords); }
+        var promises = Ext.Array.map(child_types, function (type) {
+            return function () { return this.fetchChildren(type, parentRecords); }
         }, this);
 
         return Deft.Chain.sequence(promises, this);
     },
 
-    fetchChildren: function(type, parentRecords) {
+    fetchChildren: function (type, parentRecords) {
         var fetch = this.fetch.concat(this.getRequiredFetchFields(type)),
             parentType = parentRecords[0].get('_type'),
             childField = this.getChildFieldFor(parentType, type),
@@ -190,7 +190,7 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
     //
     //     return this.fetchChunks(type, fetch, chunks, "WorkProduct.ObjectID", Ext.String.format("Please Wait... Loading Tasks for {0} User Stories", parentRecords.length));
     // },
-    fetchChunks: function(type, fetch, chunks, chunkProperty, statusString) {
+    fetchChunks: function (type, fetch, chunks, chunkProperty, statusString) {
 
         if (!chunks || chunks.length === 0) {
             return [];
@@ -202,24 +202,44 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
         this.fireEvent('statusupdate', statusString);
 
         var promises = [];
-        _.each(chunks, function(c) {
-            var filters = _.map(c, function(ids) { return { property: chunkProperty, value: ids }; }),
-                config = {
-                    model: type,
-                    fetch: fetch,
-                    sorters: [
-                        { property: 'TaskIndex', direction: 'ASC' },
-                        { property: 'DragAndDropRank', direction: 'ASC' }
-                    ],
-                    filters: Rally.data.wsapi.Filter.or(filters),
-                    context: { project: null }
-                };
-            promises.push(function() { return this.fetchWsapiRecords(config); });
+        var isStoryType = type === this.storyModelName;
+
+        _.each(chunks, function (c) {
+            var filters = _.map(c, function (ids) { return { property: chunkProperty, value: ids }; });
+            filters = Rally.data.wsapi.Filter.or(filters);
+
+            if (isStoryType && Rally.getApp().down('#onlyStoriesWithDependenciesCheckbox').getValue()) {
+                let storyDepQuery = Ext.create('Rally.data.wsapi.Filter', {
+                    property: 'Predecessors.ObjectID',
+                    operator: '!=',
+                    value: null
+                });
+
+                storyDepQuery = storyDepQuery.or(Ext.create('Rally.data.wsapi.Filter', {
+                    property: 'Successors.ObjectID',
+                    operator: '!=',
+                    value: null
+                }));
+
+                filters = filters.and(storyDepQuery);
+            }
+
+            var config = {
+                model: type,
+                fetch: fetch,
+                sorters: [
+                    { property: 'TaskIndex', direction: 'ASC' },
+                    { property: 'DragAndDropRank', direction: 'ASC' }
+                ],
+                filters: filters,
+                context: { project: null }
+            };
+            promises.push(function () { return this.fetchWsapiRecords(config); });
         });
 
         return this.throttle(promises, this.maxParallelCalls, this);
     },
-    fetchWsapiRecords: function(config) {
+    fetchWsapiRecords: function (config) {
         var deferred = Ext.create('Deft.Deferred');
 
         config.compact = false;
@@ -227,7 +247,7 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
         config.allowPostGet = true;
 
         Ext.create('Rally.data.wsapi.Store', config).load({
-            callback: function(records, operation) {
+            callback: function (records, operation) {
                 if (operation.wasSuccessful()) {
                     deferred.resolve(records);
                 }
@@ -240,7 +260,7 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
         return deferred;
     },
 
-    getChildFieldFor: function(parent_type, child_type) {
+    getChildFieldFor: function (parent_type, child_type) {
         if (parent_type.toLowerCase() === "hierarchicalrequirement" || parent_type.toLowerCase() === "userstory") {
             if (child_type.toLowerCase() == "task") { return 'Tasks'; }
             if (child_type.toLowerCase() == "defect") { return 'Defects'; }
@@ -260,7 +280,7 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
         return null;
     },
 
-    getParentFieldFor: function(child_type, parent_type) {
+    getParentFieldFor: function (child_type, parent_type) {
         if (parent_type.toLowerCase() === "hierarchicalrequirement" || parent_type.toLowerCase() === "userstory") {
             if (child_type.toLowerCase() == "task") { return 'WorkProduct'; }
             if (child_type.toLowerCase() == "defect") { return 'Requirement'; }
@@ -280,7 +300,7 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
         return null;
 
     },
-    getAllowedChildTypes: function(type) {
+    getAllowedChildTypes: function (type) {
         var allowed_types = [];
         var given_types = this.loadChildModels;
 
@@ -298,7 +318,7 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
         return types_in_both;
     },
 
-    getRequiredFetchFields: function(type) {
+    getRequiredFetchFields: function (type) {
         if (/^portfolioitem/.test(type.toLowerCase())) {
             return ['Children', 'LeafStoryCount', 'Parent', 'ObjectID', 'UserStories'];
         }
@@ -309,7 +329,7 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
 
         return ['ObjectID', 'WorkProduct', 'Defects', 'Tasks', 'TestCases', 'Requirement', 'TestCase', 'FormattedID'];
     },
-    throttle: function(fns, maxParallelCalls, scope) {
+    throttle: function (fns, maxParallelCalls, scope) {
 
         if (maxParallelCalls <= 0 || fns.length < maxParallelCalls) {
             return Deft.promise.Chain.parallel(fns, scope);
@@ -328,14 +348,14 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
             fnChunks[idx].push(fns[i]);
         }
 
-        _.each(fnChunks, function(chunk) {
-            parallelFns.push(function() {
+        _.each(fnChunks, function (chunk) {
+            parallelFns.push(function () {
                 return Deft.promise.Chain.parallel(chunk, scope);
             });
         });
 
-        return Deft.Promise.reduce(parallelFns, function(groupResults, fnGroup) {
-            return Deft.Promise.when(fnGroup.call(scope)).then(function(results) {
+        return Deft.Promise.reduce(parallelFns, function (groupResults, fnGroup) {
+            return Deft.Promise.when(fnGroup.call(scope)).then(function (results) {
                 groupResults = groupResults.concat(results || []);
                 return groupResults;
             });
