@@ -7,7 +7,7 @@ Ext.define("release-tracking-with-filters", {
         id: 'filter-area',
         region: 'north',
         xtype: 'panel',
-        minHeight: 290,
+        minHeight: 250,
         overflowY: 'auto',
         collapsible: true,
         margins: '0 0 10 0',
@@ -17,7 +17,7 @@ Ext.define("release-tracking-with-filters", {
         },
         cls: 'grid-area',
         title: 'FILTERS',
-        flex: 1,
+        // flex: 1,
         layout: {
             type: 'vbox',
             align: 'stretch'
@@ -131,6 +131,10 @@ Ext.define("release-tracking-with-filters", {
     <h4><span class="field-content FeatureStoriesPredecessorsAndSuccessors icon-children"></span> - Story to Story dependencies</h4>
     <h4><span class="field-content FeaturePredecessorsAndSuccessors icon-predecessor"></span> - Feature to Feature dependencies</h4>
 
+    <h3>Only Show Stories w/ Dependencies</h3>
+
+    <p>This setting will filter out all stories that don't have at least one predecessor or successor.</p>
+
     <h3>Show Story Dependency Lines</h3>
 
     <p>This setting will display lines between cards that have user story dependencies.</p>
@@ -170,6 +174,7 @@ Ext.define("release-tracking-with-filters", {
     launch: function () {
         Rally.data.wsapi.Proxy.superclass.timeout = 120000;
         Ext.tip.QuickTipManager.init();
+        Ext.apply(Ext.tip.QuickTipManager.getQuickTip(), { showDelay: 50 });
 
         Ext.override(Rally.ui.cardboard.CardBoard, {
             getCards: function () {
@@ -308,40 +313,7 @@ Ext.define("release-tracking-with-filters", {
                 margin: '0 0 0 5'
             }]
         },
-        // {
-        // xtype: 'container',
-        // layout: 'hbox',
-        //     items: [
         {
-            xtype: 'checkbox',
-            stateful: true,
-            stateId: this.context.getScopedStateId('ReleaseTrackingWithFilters.ShowOnlyFeaturesWithDependenciesCheckbox'),
-            stateEvents: ['change'],
-            boxLabel: 'Only show Features w/ Dependencies',
-            boxLabelCls: 'dependency-label',
-            labelWidth: 255,
-            //labelAlign: 'right',
-            width: 275,
-            name: 'onlyFeaturesWithDependencies',
-            inputValue: true,
-            itemId: 'onlyFeaturesWithDependenciesCheckbox',
-            cls: 'dependency-checkbox',
-            margin: '0 3 3 0',
-            listeners: {
-                scope: this,
-                change: function (cmp, showLines) {
-                    if (this.previousCancelIcon) {
-                        this.previousDepIcon.setStyle('display', 'inline');
-                        this.previousCancelIcon.setStyle('display', 'none');
-                        this.previousDepIcon = null;
-                        this.previousCancelIcon = null;
-                    }
-
-                    this.removeDependencyLines();
-                    this._update();
-                }
-            }
-        }, {
             xtype: 'checkbox',
             stateful: true,
             stateId: this.context.getScopedStateId('ReleaseTrackingWithFilters.ShowOnlyStoriesWithDependenciesCheckbox'),
@@ -576,10 +548,26 @@ Ext.define("release-tracking-with-filters", {
     },
 
     _update: async function () {
+        let gridArea = this.down('#grid-area');
+        if (gridArea) {
+            gridArea.removeAll();
+        }
         if (this.down('#releaseTrackingSharedViewCombobox')) {
             this.down('#releaseTrackingSharedViewCombobox').setValue(null);
         }
         this.setLoading(true);
+        this.dependencyFilterBtn = Ext.create('CustomAgile.ui.gridboard.DependencyFilter', {
+            // headerPosition: 'left',
+            margin: '0 9 0 9',
+            stateful: true,
+            stateId: this.getContext().getScopedStateId('ReleaseTrackingWithFilters.dependencyfilter'),
+            listeners: {
+                scope: this,
+                dependencyfilterchange: this._dependencyfilterchange,
+                dependencyfilterstateapplied: this._dependencyfilterstateapplied
+            }
+        });
+
         this.currentIterations = await this._updateIterationsStore();
         await this._updatePisStore();
 
@@ -694,36 +682,8 @@ Ext.define("release-tracking-with-filters", {
             queries = queries.concat(Rally.data.QueryFilter.fromQueryString(this.getSetting('query')));
         }
 
-        if (this.down('#onlyFeaturesWithDependenciesCheckbox').getValue()) {
-            let depQuery = Ext.create('Rally.data.wsapi.Filter', {
-                property: 'Predecessors.ObjectID',
-                operator: '!=',
-                value: null
-            });
-
-            depQuery = depQuery.or(Ext.create('Rally.data.wsapi.Filter', {
-                property: 'Successors.ObjectID',
-                operator: '!=',
-                value: null
-            }));
-
-            queries.push(depQuery);
-        }
-
-        if (this.down('#onlyStoriesWithDependenciesCheckbox').getValue()) {
-            let storyDepQuery = Ext.create('Rally.data.wsapi.Filter', {
-                property: 'UserStories.Predecessors.ObjectID',
-                operator: '!=',
-                value: null
-            });
-
-            storyDepQuery = storyDepQuery.or(Ext.create('Rally.data.wsapi.Filter', {
-                property: 'UserStories.Successors.ObjectID',
-                operator: '!=',
-                value: null
-            }));
-
-            queries.push(storyDepQuery);
+        if (this.featureDependencyFilters) {
+            queries = queries.concat(this.featureDependencyFilters);
         }
 
         return queries;
@@ -768,9 +728,6 @@ Ext.define("release-tracking-with-filters", {
 
     _addPisGrid: function (store) {
         let gridArea = this.down('#grid-area');
-        if (gridArea) {
-            gridArea.removeAll();
-        }
         let currentModelName = this.modelNames[0];
         let allProjectsContext = this.getContext().getDataContext();
         allProjectsContext.project = null;
@@ -807,12 +764,7 @@ Ext.define("release-tracking-with-filters", {
                             dataContext: allProjectsContext,
                             portfolioItemTypes: this.portfolioItemTypes,
                             modelName: this.lowestPiTypePath,
-                            whiteListFields: [
-                                'Tags',
-                                'Milestones',
-                                'c_EnterpriseApprovalEA',
-                                'c_EAEpic'
-                            ]
+                            whiteListFields: ['Tags', 'Milestones', 'c_EnterpriseApprovalEA', 'c_EAEpic']
                         }
                     }
                 }
@@ -875,6 +827,13 @@ Ext.define("release-tracking-with-filters", {
     _onGridLoad: function (grid) {
         let store = grid.getGridOrBoard().getStore();
         let root = store.getRootNode();
+
+        if (grid.down('rallyleftright')) {
+            grid.down('rallyleftright').insert(1, this.dependencyFilterBtn);
+        }
+        else {
+            grid.insert(0, this.dependencyFilterBtn);
+        }
 
         if (root.childNodes && root.childNodes.length) {
             let oids = _.map(root.childNodes, function (pi) {
@@ -1187,6 +1146,9 @@ Ext.define("release-tracking-with-filters", {
                         record: feature,
                         target: card.getEl(),
                         context: context,
+                        // header: {
+                        //     title: 'test'
+                        // },
                         listViewConfig: {
                             gridConfig: {
                                 storeConfig: {
@@ -1196,11 +1158,32 @@ Ext.define("release-tracking-with-filters", {
                                 },
                                 columnCfgs: Constants.STORY_COLUMNS,
                             }
+                        },
+                        listeners: {
+                            scope: this,
+                            afterrender: function (popover) {
+                                popover.down('rallyleftright').insert(0, Ext.create('Ext.container.Container', {
+                                    cls: 'story-popover-feature-text',
+                                    html: `<b>${popover.record.get('FormattedID')}:</b> ${popover.record.get('Name')}`
+                                }))
+                            }
                         }
                     });
                 },
             }
         }
+    },
+
+    _dependencyfilterchange: function (filters) {
+        this.featureDependencyFilters = filters;
+
+        if (this.down('#pisGrid') && this.down('#pisGrid').getGridOrBoard()) {
+            this._update();
+        }
+    },
+
+    _dependencyfilterstateapplied: function (filters) {
+        this.featureDependencyFilters = filters;
     },
 
     showAllStoryDependencyLines: function () {
@@ -1728,11 +1711,13 @@ Ext.define("release-tracking-with-filters", {
     },
 
     onHelpClicked() {
+        // CustomAgile.ui.tutorial.ReleaseTrackingTutorial.showWelcomeDialog(this);
         Ext.create('Rally.ui.dialog.Dialog', {
             autoShow: true,
             layout: 'fit',
             width: '70%',
-            height: '90%',
+            minHeight: 650,
+            //height: '90%',
             closable: true,
             autoDestroy: true,
             autoScroll: true,

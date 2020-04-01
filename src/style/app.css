@@ -197,3 +197,39 @@ li {
 .ts-card-table tr {
     width: 100%;
 }
+
+.dependency-filter-btn {
+    position: relative;
+}
+
+.dep-checkbox-container {
+    background-color: white;
+    border-radius: 1px;
+    color: black;
+    width: 100% !important;
+    margin-top: 5px;
+}
+
+.dependency-filter-count {
+    position: absolute;
+    right: 1px;
+    bottom: 1px;
+    font-size: 8px;
+    color: white;
+    background-color: #00a9e0;
+    border-radius: 5px;
+    width: 10px;
+    height: 10px;
+    font-weight: bold;
+    padding-left: 3px;
+}
+
+.story-popover-feature-text {
+    color: white;
+    font-family: ProximaNova,Helvetica,Arial;
+    font-size: 16px;
+    font-weight: normal;
+    line-height: 16px;
+    text-transform: none;
+    padding-top: 5px;
+}

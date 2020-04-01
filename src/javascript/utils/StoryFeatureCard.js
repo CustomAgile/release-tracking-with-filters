@@ -74,7 +74,7 @@ Ext.define('StoryFeatureCard', {
         var html = [];
         html.push('<div class="ts-card-table-ct"><table class="ts-card-table"><tr>');
         html.push('<td class="ts-card-content">' + this._getFeatureColor() + '</td>');
-        html.push('<td class="ts-card-content"><div class="field-content">' + this.feature.FormattedID + '</div></td>');
+        html.push(`<td class="ts-card-content"><div class="field-content" data-qtip="${this.feature.Name}">${this.feature.FormattedID}</div></td>`);
         html.push('</tr></table>');
         return html.join('\n');
     },
@@ -86,7 +86,7 @@ Ext.define('StoryFeatureCard', {
         html.push('<div class="ts-card-table-ct"><table class="ts-card-table"><tr>');
 
         html.push('<td class="ts-card-content">' + this._getFeatureColor() + '</td>');
-        html.push('<td class="ts-card-content ts-formatted-id"><div class="field-content">' + this.feature.FormattedID + '</div></td>');
+        html.push(`<td class="ts-card-content ts-formatted-id"><div class="field-content" data-qtip="${this.feature.Name}">${this.feature.FormattedID}</div></td>`);
         html.push('<td class="ts-card-content ts-card-icons">');
         if (this.storiesHaveDependencies) {
             html.push('<span class="field-content FeatureStoriesPredecessorsAndSuccessors icon-children" data-qtip="Story to Story Dependencies"></span>');
