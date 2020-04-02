@@ -989,7 +989,7 @@ Ext.define("release-tracking-with-filters", {
     getCardConfig: function () {
         if (this.down('#cardTypeCombo').getValue() === 'Stories') {
             return {
-                fields: ['Feature', 'Project']
+                fields: ['Feature', 'Project', 'PredecessorsAndSuccessors']
             };
             // let config = {};
             // if (this.down('#swimlaneCombo').getValue() === 'Project') {
