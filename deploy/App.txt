@@ -2,13 +2,13 @@
 <html>
 
 <head>
-    <title>release-tracking-with-filters-1.3.3</title>
+    <title>release-tracking-with-filters-1.3.4</title>
     <!--  (c) 2019 Custom Agile.  All Rights Reserved. -->
-    <!--  Build Date: Thu Apr 02 2020 11:22:12 GMT-0400 (Eastern Daylight Time) -->
+    <!--  Build Date: Thu Apr 02 2020 19:11:34 GMT-0400 (Eastern Daylight Time) -->
     <!--  Repository: https://github.com/CustomAgile/release-tracking-with-filters -->
     <script type="text/javascript">
-        var APP_BUILD_DATE = "Thu Apr 02 2020 11:22:12 GMT-0400 (Eastern Daylight Time)";
-        var CHECKSUM = 3100940573900;
+        var APP_BUILD_DATE = "Thu Apr 02 2020 19:11:34 GMT-0400 (Eastern Daylight Time)";
+        var CHECKSUM = 3078265711918;
     </script>
 
     <script type="text/javascript" src="/apps/2.1/sdk.js"></script>
@@ -3477,10 +3477,7 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
             }
 
             return this.fetchChildrenFromMultipleTypes(types, args);
-            // if (type === this.storyModelName ) {
-            // this.getAllowedChildTypes(type);
-            // return this.fetchTasks(args);
-            //}
+
         }
         return [];
     },
@@ -3580,13 +3577,6 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
             Ext.String.format("Please Wait... Loading {0} for {1} items", childField, parentRecords.length));
     },
 
-    // fetchTasks: function(parentRecords){
-    //     var type = this.taskModelName,
-    //         fetch = this.fetch.concat(this.getRequiredFetchFields(type)),
-    //         chunks = this._getChunks(parentRecords, 'Tasks', 'Count');
-    //
-    //     return this.fetchChunks(type, fetch, chunks, "WorkProduct.ObjectID", Ext.String.format("Please Wait... Loading Tasks for {0} User Stories", parentRecords.length));
-    // },
     fetchChunks: function (type, fetch, chunks, chunkProperty, statusString) {
 
         if (!chunks || chunks.length === 0) {
@@ -3599,27 +3589,10 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
         this.fireEvent('statusupdate', statusString);
 
         var promises = [];
-        var isStoryType = type === this.storyModelName;
 
         _.each(chunks, function (c) {
             var filters = _.map(c, function (ids) { return { property: chunkProperty, value: ids }; });
             filters = Rally.data.wsapi.Filter.or(filters);
-
-            if (isStoryType && Rally.getApp().down('#onlyStoriesWithDependenciesCheckbox').getValue()) {
-                let storyDepQuery = Ext.create('Rally.data.wsapi.Filter', {
-                    property: 'Predecessors.ObjectID',
-                    operator: '!=',
-                    value: null
-                });
-
-                storyDepQuery = storyDepQuery.or(Ext.create('Rally.data.wsapi.Filter', {
-                    property: 'Successors.ObjectID',
-                    operator: '!=',
-                    value: null
-                }));
-
-                filters = filters.and(storyDepQuery);
-            }
 
             var config = {
                 model: type,
@@ -3721,7 +3694,7 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
         }
 
         if (type.toLowerCase() === this.storyModelName) {
-            return ['FormattedID', 'Children', 'Tasks', 'Parent', 'PortfolioItem', 'HasParent', 'ObjectID', 'TestCases', 'Defects'];
+            return ['FormattedID', 'Children', 'Tasks', 'Parent', 'PortfolioItem', 'HasParent', 'ObjectID', 'TestCases', 'Defects', 'PredecessorsAndSuccessors'];
         }
 
         return ['ObjectID', 'WorkProduct', 'Defects', 'Tasks', 'TestCases', 'Requirement', 'TestCase', 'FormattedID'];
@@ -3917,12 +3890,15 @@ Ext.define('TsExportGrid', {
         var grid = this._getGrid();
         if (grid) {
             let filteredColumns = [];
+            let hasDependencies = false;
 
             _.each(grid.getGridOrBoard().columns, function (item) {
                 // PredecessorsAndSuccessors column is generated via a template, not from
                 // a specific WSAPI attribute. For exporting this data we have to split
                 // this column back into 2 separate columns/data points
                 if (item.dataIndex === 'PredecessorsAndSuccessors') {
+                    hasDependencies = true;
+
                     let predCol = Ext.create('Rally.ui.grid.FieldColumn', {
                         dataIndex: 'Predecessors',
                         text: 'Predecessors'
@@ -3945,6 +3921,21 @@ Ext.define('TsExportGrid', {
                     filteredColumns.push(item);
                 }
             });
+
+            if (!hasDependencies) {
+                let predCol = Ext.create('Rally.ui.grid.FieldColumn', {
+                    dataIndex: 'Predecessors',
+                    text: 'Predecessors'
+                });
+
+                let succCol = Ext.create('Rally.ui.grid.FieldColumn', {
+                    dataIndex: 'Successors',
+                    text: 'Successors'
+                });
+
+                filteredColumns.push(predCol);
+                filteredColumns.push(succCol);
+            }
 
             return filteredColumns;
         }
@@ -3975,36 +3966,10 @@ Ext.define('TsExportGrid', {
             filters.push(timeboxScope.getQueryFilter());
         }
 
-        if (app.down('#onlyFeaturesWithDependenciesCheckbox').getValue()) {
-            let depQuery = Ext.create('Rally.data.wsapi.Filter', {
-                property: 'Predecessors.ObjectID',
-                operator: '!=',
-                value: null
-            });
+        let depFilter = app.down('#dependencyFilterBtn');
 
-            depQuery = depQuery.or(Ext.create('Rally.data.wsapi.Filter', {
-                property: 'Successors.ObjectID',
-                operator: '!=',
-                value: null
-            }));
-
-            filters.push(depQuery);
-        }
-
-        if (app.down('#onlyStoriesWithDependenciesCheckbox').getValue()) {
-            let storyDepQuery = Ext.create('Rally.data.wsapi.Filter', {
-                property: 'UserStories.Predecessors.ObjectID',
-                operator: '!=',
-                value: null
-            });
-
-            storyDepQuery = storyDepQuery.or(Ext.create('Rally.data.wsapi.Filter', {
-                property: 'UserStories.Successors.ObjectID',
-                operator: '!=',
-                value: null
-            }));
-
-            filters.push(storyDepQuery);
+        if (depFilter) {
+            filters = filters.concat(depFilter.getFilters());
         }
 
         return filters;
@@ -4013,6 +3978,10 @@ Ext.define('TsExportGrid', {
         var fetch = _.pluck(this._getExportColumns(), 'dataIndex');
         if (Ext.Array.contains(fetch, 'TaskActualTotal')) {
             fetch.push('Actuals');
+        }
+
+        if (!Ext.Array.contains(fetch, 'PredecessorsAndSuccessors')) {
+            fetch.push('PredecessorsAndSuccessors');
         }
 
         return fetch;
@@ -4769,6 +4738,7 @@ Ext.define("release-tracking-with-filters", {
         this.dependencyFilterBtn = Ext.create('CustomAgile.ui.gridboard.DependencyFilter', {
             // headerPosition: 'left',
             margin: '0 9 0 9',
+            itemId: 'dependencyFilterBtn',
             stateful: true,
             stateId: this.getContext().getScopedStateId('ReleaseTrackingWithFilters.dependencyfilter'),
             listeners: {

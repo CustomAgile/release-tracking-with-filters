@@ -514,6 +514,7 @@ Ext.define("release-tracking-with-filters", {
         this.dependencyFilterBtn = Ext.create('CustomAgile.ui.gridboard.DependencyFilter', {
             // headerPosition: 'left',
             margin: '0 9 0 9',
+            itemId: 'dependencyFilterBtn',
             stateful: true,
             stateId: this.getContext().getScopedStateId('ReleaseTrackingWithFilters.dependencyfilter'),
             listeners: {

@@ -80,10 +80,7 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
             }
 
             return this.fetchChildrenFromMultipleTypes(types, args);
-            // if (type === this.storyModelName ) {
-            // this.getAllowedChildTypes(type);
-            // return this.fetchTasks(args);
-            //}
+
         }
         return [];
     },
@@ -183,13 +180,6 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
             Ext.String.format("Please Wait... Loading {0} for {1} items", childField, parentRecords.length));
     },
 
-    // fetchTasks: function(parentRecords){
-    //     var type = this.taskModelName,
-    //         fetch = this.fetch.concat(this.getRequiredFetchFields(type)),
-    //         chunks = this._getChunks(parentRecords, 'Tasks', 'Count');
-    //
-    //     return this.fetchChunks(type, fetch, chunks, "WorkProduct.ObjectID", Ext.String.format("Please Wait... Loading Tasks for {0} User Stories", parentRecords.length));
-    // },
     fetchChunks: function (type, fetch, chunks, chunkProperty, statusString) {
 
         if (!chunks || chunks.length === 0) {
@@ -202,27 +192,10 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
         this.fireEvent('statusupdate', statusString);
 
         var promises = [];
-        var isStoryType = type === this.storyModelName;
 
         _.each(chunks, function (c) {
             var filters = _.map(c, function (ids) { return { property: chunkProperty, value: ids }; });
             filters = Rally.data.wsapi.Filter.or(filters);
-
-            if (isStoryType && Rally.getApp().down('#onlyStoriesWithDependenciesCheckbox').getValue()) {
-                let storyDepQuery = Ext.create('Rally.data.wsapi.Filter', {
-                    property: 'Predecessors.ObjectID',
-                    operator: '!=',
-                    value: null
-                });
-
-                storyDepQuery = storyDepQuery.or(Ext.create('Rally.data.wsapi.Filter', {
-                    property: 'Successors.ObjectID',
-                    operator: '!=',
-                    value: null
-                }));
-
-                filters = filters.and(storyDepQuery);
-            }
 
             var config = {
                 model: type,
@@ -324,7 +297,7 @@ Ext.define('Rally.technicalservices.HierarchyLoader', {
         }
 
         if (type.toLowerCase() === this.storyModelName) {
-            return ['FormattedID', 'Children', 'Tasks', 'Parent', 'PortfolioItem', 'HasParent', 'ObjectID', 'TestCases', 'Defects'];
+            return ['FormattedID', 'Children', 'Tasks', 'Parent', 'PortfolioItem', 'HasParent', 'ObjectID', 'TestCases', 'Defects', 'PredecessorsAndSuccessors'];
         }
 
         return ['ObjectID', 'WorkProduct', 'Defects', 'Tasks', 'TestCases', 'Requirement', 'TestCase', 'FormattedID'];

@@ -72,12 +72,15 @@ Ext.define('TsExportGrid', {
         var grid = this._getGrid();
         if (grid) {
             let filteredColumns = [];
+            let hasDependencies = false;
 
             _.each(grid.getGridOrBoard().columns, function (item) {
                 // PredecessorsAndSuccessors column is generated via a template, not from
                 // a specific WSAPI attribute. For exporting this data we have to split
                 // this column back into 2 separate columns/data points
                 if (item.dataIndex === 'PredecessorsAndSuccessors') {
+                    hasDependencies = true;
+
                     let predCol = Ext.create('Rally.ui.grid.FieldColumn', {
                         dataIndex: 'Predecessors',
                         text: 'Predecessors'
@@ -100,6 +103,21 @@ Ext.define('TsExportGrid', {
                     filteredColumns.push(item);
                 }
             });
+
+            if (!hasDependencies) {
+                let predCol = Ext.create('Rally.ui.grid.FieldColumn', {
+                    dataIndex: 'Predecessors',
+                    text: 'Predecessors'
+                });
+
+                let succCol = Ext.create('Rally.ui.grid.FieldColumn', {
+                    dataIndex: 'Successors',
+                    text: 'Successors'
+                });
+
+                filteredColumns.push(predCol);
+                filteredColumns.push(succCol);
+            }
 
             return filteredColumns;
         }
@@ -130,36 +148,10 @@ Ext.define('TsExportGrid', {
             filters.push(timeboxScope.getQueryFilter());
         }
 
-        if (app.down('#onlyFeaturesWithDependenciesCheckbox').getValue()) {
-            let depQuery = Ext.create('Rally.data.wsapi.Filter', {
-                property: 'Predecessors.ObjectID',
-                operator: '!=',
-                value: null
-            });
+        let depFilter = app.down('#dependencyFilterBtn');
 
-            depQuery = depQuery.or(Ext.create('Rally.data.wsapi.Filter', {
-                property: 'Successors.ObjectID',
-                operator: '!=',
-                value: null
-            }));
-
-            filters.push(depQuery);
-        }
-
-        if (app.down('#onlyStoriesWithDependenciesCheckbox').getValue()) {
-            let storyDepQuery = Ext.create('Rally.data.wsapi.Filter', {
-                property: 'UserStories.Predecessors.ObjectID',
-                operator: '!=',
-                value: null
-            });
-
-            storyDepQuery = storyDepQuery.or(Ext.create('Rally.data.wsapi.Filter', {
-                property: 'UserStories.Successors.ObjectID',
-                operator: '!=',
-                value: null
-            }));
-
-            filters.push(storyDepQuery);
+        if (depFilter) {
+            filters = filters.concat(depFilter.getFilters());
         }
 
         return filters;
@@ -168,6 +160,10 @@ Ext.define('TsExportGrid', {
         var fetch = _.pluck(this._getExportColumns(), 'dataIndex');
         if (Ext.Array.contains(fetch, 'TaskActualTotal')) {
             fetch.push('Actuals');
+        }
+
+        if (!Ext.Array.contains(fetch, 'PredecessorsAndSuccessors')) {
+            fetch.push('PredecessorsAndSuccessors');
         }
 
         return fetch;
