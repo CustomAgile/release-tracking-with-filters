@@ -87,7 +87,7 @@ Ext.define("release-tracking-with-filters", {
             id: 'controls-area',
             xtype: 'container',
             layout: 'hbox',
-            minWidth: 70,
+            minWidth: 700,
             minHeight: 100,
             margin: '0 0 10 20',
             items: [{

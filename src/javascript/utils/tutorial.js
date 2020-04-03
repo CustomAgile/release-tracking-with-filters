@@ -2,11 +2,11 @@ Ext.define('CustomAgile.ui.tutorial.ReleaseTrackingTutorial', {
     singleton: true,
 
     welcomeHtml: `
-    <p>Program managers, product owners, engineering leads, and other organizers can track the status of teams and features in a common release from this app.</p>
+    <p>Program managers, product owners, engineering leads, and other organizers can track the status of teams and features in a common Program Increment (PI) via the release timebox from this app.</p>
     
-    <p>Features that have been planned into the selected release display on the left side of the page, which can be compared against a matrix of teams and iterations on the right.</p>
+    <p>Features that have been planned into the selected PI (release timebox) display on the left side of the page, which can be compared against a matrix of teams and iterations on the right.</p>
 
-    <p>Change the release via the Release picker at the top of this page.</p>
+    <p>Change the release via the Release timebox picker at the top of this page.</p>
     `,
 
     steps: [
@@ -15,7 +15,7 @@ Ext.define('CustomAgile.ui.tutorial.ReleaseTrackingTutorial', {
             title: 'Feature Grid',
             placement: 'right',
             html: `
-            <p>This section lists all of the features that have been planned in the selected release. By default they are sorted by rank. Clicking and dragging the left-most side of a row allows you to re-rank features.</p>
+            <p>This section lists all of the features that have been planned in the selected PI (release timebox). By default they are sorted by rank. Clicking and dragging the left-most side of a row allows you to re-rank features.</p>
             <p>Just above the grid is a series of buttons</p>
             <div>
                 <p> <span role="presentation" class="x-btn-icon-el icon-add-column tutorial-example-btn">&nbsp;</span> Column picker: Select which fields you would like to see in the grid. These fields will also appear as columns when exported</p>
@@ -41,7 +41,7 @@ Ext.define('CustomAgile.ui.tutorial.ReleaseTrackingTutorial', {
             title: 'Iterations',
             html: `
             <p>These 2 date inputs control which iterations show in the board.</p>
-            <p>They are automatically populated using the selected release start and end dates. Update the values to control which iterations are shown.</p>
+            <p>They are automatically populated using the selected PI (release timebox) start and end dates. Update the values to control which iterations are shown.</p>
             `
         },
         {
@@ -52,7 +52,7 @@ Ext.define('CustomAgile.ui.tutorial.ReleaseTrackingTutorial', {
             <p>Customize how the data is ogranized in the board.</p>
             <p>Card Type</p>
             <ul>
-                <li>Features - User Stories are rolled up to their assigned Features giving you an overview of how many Stories are assigned to each Iteration by Feature. Clicking on a card will provide a popup with more detailed story information.</li>
+                <li>Features - In a Feature summary card, User Stories are rolled up to their parent Feature giving you an overview of how many Stories are assigned to each Iteration by Feature. Clicking on a card will provide a popup with more detailed story information.</li>
                 <li>Stories - Each card represents a single User Story</li>
             </ul>
             <p>Swimlanes</p>
@@ -131,7 +131,7 @@ Ext.define('CustomAgile.ui.tutorial.ReleaseTrackingTutorial', {
                     cls: 'secondary rly-small',
                     listeners: {
                         click: () => {
-                            this.welcomeDialog.close;
+                            this.welcomeDialog.close();
                         },
                         scope: this
                     }

@@ -127,14 +127,14 @@ Ext.define('CustomAgile.ui.gridboard.DependencyFilter', {
                             itemId: 'dependencyFilterMatchCombo',
                             hideLabel: false,
                             margin: 10,
-                            fieldLabel: 'Match Filters',
+                            fieldLabel: 'Filter Match Condition',
                             labelAlign: 'top',
                             queryMode: 'local',
                             store: {
                                 fields: ['label', 'value'],
                                 data: [
-                                    { label: 'All', value: 'AND' },
-                                    { label: 'Any', value: 'OR' }
+                                    { label: 'Both Filters', value: 'AND' },
+                                    { label: 'Either Filter', value: 'OR' }
                                 ]
                             },
                             width: 120,
