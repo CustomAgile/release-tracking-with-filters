@@ -22,7 +22,7 @@ Ext.define('CustomAgile.ui.tutorial.ReleaseTrackingTutorial', {
                 <p> <span role="presentation" class="x-btn-icon-el icon-predecessor tutorial-example-btn">&nbsp;</span> Dependency Filter: Provides the ability to filter the below list of Features on those that have dependencies, those that have stories with dependencies or both</p>
                 <p> <span role="presentation" class="x-btn-icon-el icon-export tutorial-example-btn">&nbsp;</span> Export: Exports the Features from the grid as well as the option to include any level of child artifacts</p>
             </div>
-            <p>The grid has paging functionality. Only the Features showing on the current grid page will show data in the board. Increase the page size to show more data in the board.</p>
+            <p>Only the Features showing on the current grid page will show data in the board. Increase the page size to show more data in the board.</p>
             `
         },
         {
