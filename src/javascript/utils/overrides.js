@@ -17,14 +17,6 @@ Ext.override(Rally.ui.gridboard.plugin.GridBoardFieldPicker, {
     ]
 });
 
-Ext.override(Rally.ui.inlinefilter.PropertyFieldComboBox, {
-    /**
-     * @cfg {String[]} whiteListFields
-     * field names that should be included from the filter row field combobox
-     */
-    defaultWhiteListFields: ['Milestones', 'Tags', 'c_EnterpriseApprovalEA', 'c_EAEpic']
-});
-
 /**
  * Remove the buffer when responding to 'viewstatesave' events
  */

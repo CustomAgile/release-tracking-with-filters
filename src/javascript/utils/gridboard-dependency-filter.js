@@ -281,6 +281,18 @@ Ext.define('CustomAgile.ui.gridboard.DependencyFilter', {
         }
     },
 
+    getFeaturesWithDependenciesValue: function () {
+        return this.filterFeatures;
+    },
+
+    getFeaturesWithStoryDependenciesValue: function () {
+        return this.filterStories;
+    },
+
+    getFilterMatchValue: function () {
+        return this.filterMatch;
+    },
+
     saveState: function () {
         var me = this,
             id = me.stateful && me.stateId,

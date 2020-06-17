@@ -3,6 +3,9 @@ Ext.define("release-tracking-with-filters", {
     extend: 'Rally.app.App',
     componentCls: 'app',
     layout: 'border',
+    integrationHeaders: {
+        name: "release-tracking-with-filters"
+    },
     items: [{
         id: 'filter-area',
         region: 'north',
@@ -17,7 +20,6 @@ Ext.define("release-tracking-with-filters", {
         },
         cls: 'grid-area',
         title: 'FILTERS',
-        // flex: 1,
         layout: {
             type: 'vbox',
             align: 'stretch'
@@ -58,7 +60,6 @@ Ext.define("release-tracking-with-filters", {
         },
         cls: 'grid-area',
         title: Constants.PORTFOLIO_ITEMS,
-        // width: 350,
         flex: 1,
         layout: {
             type: 'vbox',
@@ -119,10 +120,6 @@ Ext.define("release-tracking-with-filters", {
         defaultSettings: {
             // 'ReleaseTrackingWithFilters.dependencyLines': 'noDependencyLines'
         },
-    },
-
-    integrationHeaders: {
-        name: "release-tracking-with-filters"
     },
 
     launch: function () {
@@ -305,7 +302,6 @@ Ext.define("release-tracking-with-filters", {
             boxLabel: 'Show Story Dependency Lines (<span class="field-content FeatureStoriesPredecessorsAndSuccessors icon-children"></span>)',
             boxLabelCls: 'dependency-label',
             labelWidth: 255,
-            // labelAlign: 'right',
             width: 275,
             name: 'dependencies',
             inputValue: true,
@@ -332,7 +328,6 @@ Ext.define("release-tracking-with-filters", {
                     }
                 }
             }
-            //}]
         }, {
             xtype: 'fieldcontainer',
             itemId: 'dependencyFiltersContainer',
@@ -398,16 +393,6 @@ Ext.define("release-tracking-with-filters", {
         this.ancestorFilterPlugin = Ext.create('Utils.AncestorPiAppFilter', {
             ptype: 'UtilsAncestorPiAppFilter',
             pluginId: 'ancestorFilterPlugin',
-            settingsConfig: {},
-            whiteListFields: [
-                'Tags',
-                'Milestones',
-                'c_EnterpriseApprovalEA',
-                'c_EAEpic',
-                'DisplayColor',
-                'Predecessors'
-            ],
-            filtersHidden: false,
             visibleTab: 'PortfolioItem/Feature',
             listeners: {
                 scope: this,
@@ -474,6 +459,17 @@ Ext.define("release-tracking-with-filters", {
         let gridView = this.down('#pisGrid').getCurrentView();
         let views = Ext.apply(gridView, ancestorData);
 
+        views.featuresWithDependencies = this.dependencyFilterBtn.getFeaturesWithDependenciesValue();
+        views.featuresWithStoryDependencies = this.dependencyFilterBtn.getFeaturesWithStoryDependenciesValue();
+        views.dependencyFilterMatch = this.dependencyFilterBtn.getFilterMatchValue();
+        views.cardType = this.down('#cardTypeCombo').getValue();
+        views.swimlane = this.down('#swimlaneCombo').getValue();
+        views.onlyStoriesWithDependencies = this.down('#onlyStoriesWithDependenciesCheckbox').getValue();
+        views.storyDependencyLines = this.down('#storyDependencyCheckbox').getValue();
+        views.greyLineFilter = this.down('#greyLineFilter').getValue();
+        views.yellowLineFilter = this.down('#yellowLineFilter').getValue();
+        views.redLineFilter = this.down('#redLineFilter').getValue();
+
         return views;
     },
 
@@ -494,22 +490,43 @@ Ext.define("release-tracking-with-filters", {
         }
         this.down('#pisGrid').setCurrentView(view);
 
+        this.dependencyFilterBtn.updateValues({
+            filterFeatures: view.featuresWithDependencies,
+            filterStories: view.featuresWithStoryDependencies,
+            filterMatch: view.dependencyFilterMatch
+        });
+        this.dependencyFilterBtn.saveState();
+
+        this.down('#cardTypeCombo').setValue(view.cardType);
+        this.down('#swimlaneCombo').setValue(view.swimlane);
+        this.down('#onlyStoriesWithDependenciesCheckbox').setValue(view.onlyStoriesWithDependencies);
+        this.down('#storyDependencyCheckbox').setValue(view.storyDependencyLines);
+        this.down('#greyLineFilter').setValue(view.greyLineFilter);
+        this.down('#yellowLineFilter').setValue(view.yellowLineFilter);
+        this.down('#redLineFilter').setValue(view.redLineFilter);
+
         setTimeout(async function () {
             Ext.resumeLayouts(true);
             app.settingView = false;
+            app.dontResetSharedViewCombo = true;
             this.setLoading(false);
             app._update();
-        }.bind(this), 400);
+        }.bind(this), 2000);
     },
 
     _update: async function () {
+        if (this.settingView) {
+            return;
+        }
+
         let gridArea = this.down('#grid-area');
         if (gridArea) {
             gridArea.removeAll();
         }
-        if (this.down('#releaseTrackingSharedViewCombobox')) {
+        if (!this.dontResetSharedViewCombo && this.down('#releaseTrackingSharedViewCombobox')) {
             this.down('#releaseTrackingSharedViewCombobox').setValue(null);
         }
+        this.dontResetSharedViewCombo = false;
         this.setLoading(true);
         this.dependencyFilterBtn = Ext.create('CustomAgile.ui.gridboard.DependencyFilter', {
             // headerPosition: 'left',
