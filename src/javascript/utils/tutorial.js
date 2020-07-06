@@ -7,6 +7,8 @@ Ext.define('CustomAgile.ui.tutorial.ReleaseTrackingTutorial', {
     <p>Features that have been planned into the selected PI (release timebox) display on the left side of the page, which can be compared against a matrix of teams and iterations on the right.</p>
 
     <p>Change the release via the Release timebox picker at the top of this page.</p>
+
+    <p>Use the filters above to filter the list of Features that appear on the left side of the app.</p>
     `,
 
     steps: [
@@ -30,7 +32,7 @@ Ext.define('CustomAgile.ui.tutorial.ReleaseTrackingTutorial', {
             placement: 'bottom',
             title: 'Filters',
             html: `
-            <p>This section provides fine-tuning of the Features that will display in the grid.</p>
+            <p>This section provides fine-tuning of the Features that will display in the grid on the left side of the app.</p>
             <p>Filters can be applied at any level in the portfolio item hierarchy as well as to user stories. Scope can be set to the current project(s) or across the entire workspace (workspace scoping may cause longer load times or even timeouts).</p>
             <p>Additional filter help can be found by clicking on the help button in the top-right corner of the filters section.</p>
             `

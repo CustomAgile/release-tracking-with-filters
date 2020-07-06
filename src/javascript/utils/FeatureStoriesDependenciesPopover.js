@@ -91,16 +91,14 @@ Ext.define('FeatureStoriesDependenciesPopover', {
                     html.push(this.depRowTpl.apply(dependentStory));
                 }, this);
             }
-            else {
-                // Don't show stories with no dependencies
-
-                // Add a "None" row
-                html.push(this.noneRowTpl.apply({
-                    _dependencyType: fieldName
-                }));
-
-            }
         }, this);
+
+        if (!html.length) {
+            // Add a "None" row
+            html.push(this.noneRowTpl.apply({
+                _dependencyType: fieldName
+            }));
+        }
 
         return '<div class="outer-container">' + html.join("\n") + '</div>';
     },

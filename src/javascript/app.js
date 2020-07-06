@@ -265,6 +265,32 @@ Ext.define("release-tracking-with-filters", {
                 cls: 'date-label control-label'
             }]
         },
+        // TODO: Determine if this functionality is needed
+        // {
+        //     xtype: 'checkbox',
+        //     stateful: true,
+        //     stateId: this.context.getScopedStateId('ReleaseTrackingWithFilters.ShowLinesBetweenSiblingStoriesCheckbox'),
+        //     stateEvents: ['change'],
+        //     boxLabel: 'Show Lines Between Stories Under The Same Feature',
+        //     boxLabelCls: 'dependency-label',
+        //     labelWidth: 255,
+        //     width: 300,
+        //     name: 'linesBetweenSiblingStories',
+        //     inputValue: true,
+        //     itemId: 'linesBetweenSiblingsCheckbox',
+        //     cls: 'dependency-checkbox',
+        //     margin: '0 3 3 0',
+        //     listeners: {
+        //         scope: this,
+        //         change: function (cmp, showLines) {
+        //             this.removeDependencyLines();
+
+        //             if (showLines) {
+        //                 this.showLines();
+        //             }
+        //         }
+        //     }
+        // },
         {
             xtype: 'checkbox',
             stateful: true,
@@ -273,7 +299,6 @@ Ext.define("release-tracking-with-filters", {
             boxLabel: 'Only show Stories w/ Dependencies',
             boxLabelCls: 'dependency-label',
             labelWidth: 255,
-            //labelAlign: 'right',
             width: 275,
             name: 'onlyStoriesWithDependencies',
             inputValue: true,
@@ -282,7 +307,7 @@ Ext.define("release-tracking-with-filters", {
             margin: '0 3 3 0',
             listeners: {
                 scope: this,
-                change: function (cmp, showLines) {
+                change: function () {
                     if (this.previousCancelIcon) {
                         this.previousDepIcon.setStyle('display', 'inline');
                         this.previousCancelIcon.setStyle('display', 'none');
@@ -695,10 +720,6 @@ Ext.define("release-tracking-with-filters", {
         return filters;
     },
 
-    _getDefects: function () {
-        // TODO (tj) needed?
-    },
-
     _addPisGrid: function (store) {
         let gridArea = this.down('#grid-area');
         let currentModelName = this.modelNames[0];
@@ -783,15 +804,12 @@ Ext.define("release-tracking-with-filters", {
                 }],
                 listeners: {
                     scope: this,
-                    // TODO (tj) support multi item selection
-                    /*
-                    itemclick: function(grid, record, item, index) {
+                    itemclick: function (grid, record) {
                         // Ignore clicks on non root items
                         if (record.get('_type') == this.lowestPiTypePath.toLowerCase()) {
                             this._onPiSelected(record);
                         }
                     }
-                    */
                 }
             }
         });
@@ -893,16 +911,20 @@ Ext.define("release-tracking-with-filters", {
         }
         else {
             this.selectedPi = pi;
-            filter = Rally.data.wsapi.Filter({
+            let piFilter = Rally.data.wsapi.Filter({
                 property: this.lowestPiTypeName,
                 operator: '=',
                 value: pi.get('_ref')
             });
+            filter = this.storiesFilter ? this.storiesFilter.and(piFilter) : piFilter;
         }
         this.buckets = {};
         this.board.refresh({
             storeConfig: {
                 filters: filter,
+                fetch: [this.lowestPiTypeName].concat(Constants.STORIES_FETCH),
+                groupField: this.lowestPiTypeName,
+                context: this.currentDataContext,
                 enablePostGet: true,
                 pageSize: 2000,
                 limit: Infinity
@@ -990,7 +1012,15 @@ Ext.define("release-tracking-with-filters", {
             listeners: {
                 scope: this,
                 load: function (board) {
-                    boardDeferred.resolve(board);
+                    // On first load boardDeferred will be pending, but when clicking on a feature
+                    // in the grid to filter the board, the store will refresh and boardDeferred will
+                    // be resolved. In that case just continue to onAddPisBoardSuccess
+                    if (boardDeferred.state !== 'resolved') {
+                        boardDeferred.resolve(board);
+                    }
+                    else {
+                        this.onAddPisBoardSuccess(board);
+                    }
                 }
             },
             rowConfig: {
@@ -1159,6 +1189,59 @@ Ext.define("release-tracking-with-filters", {
         this.featureDependencyFilters = filters;
     },
 
+    // TODO: Determine if this functionality is needed
+    // showLines: async function () {
+    //     let lines = [];
+    //     this.removeDependencyLines();
+    //     this.setLoading('Drawing Lines');
+
+    //     if (this.down('#linesBetweenSiblingsCheckbox').getValue()) {
+    //         lines = lines.concat(this.getStorySiblingLines());
+    //     }
+
+    //     this.drawDependencies(lines);
+
+    //     this.setLoading(false);
+    // },
+
+    // TODO: Determine if this functionality is needed
+    // getStorySiblingLines: function () {
+    //     let board = this.down('#releaseCardboard');
+    //     let isStoryCards = this.down('#cardTypeCombo').getValue() === 'Stories';
+    //     let featureHash = {};
+    //     let lines = [];
+
+    //     if (board && isStoryCards) {
+    //         let cards = board.getCards();
+
+    //         for (let card of cards) {
+    //             let story = card.getRecord();
+
+    //             if (story.get('Feature')) {
+    //                 let id = story.get('Feature').ObjectID;
+    //                 if (!featureHash[id]) {
+    //                     featureHash[id] = [];
+    //                 }
+    //                 featureHash[id].push(card);
+    //             }
+    //         }
+
+    //         for (let featureId in featureHash) {
+    //             let currentCards = featureHash[featureId];
+    //             for (let i = 0; i < currentCards.length - 1; i++) {
+    //                 let card = currentCards[i];
+    //                 for (let j = i + 1; j < currentCards.length; j++) {
+    //                     let line = this.generateStoryLine(card, currentCards[j]);
+    //                     if (line) { lines.push(line); }
+
+    //                 }
+    //             }
+    //         }
+    //     }
+
+    //     return lines;
+    // },
+
     showAllStoryDependencyLines: function () {
         let def = Ext.create('Deft.Deferred');
         let board = this.down('#releaseCardboard');
@@ -1278,6 +1361,69 @@ Ext.define("release-tracking-with-filters", {
         });
     },
 
+    // TODO: Determine if this functionality is needed
+    // generateStoryLine: function (card1, card2) {
+    //     // If a project swimlane is collapsed, the card isn't hidden, but it's coordinates will be 0,0
+    //     if (!card1.getY() || !card2.getY()) {
+    //         return null;
+    //     }
+
+    //     let stroke = 'black';
+    //     let card1Height = card1.getHeight();
+    //     let cardWidth = card1.getWidth();
+    //     let card1X = card1.getX();
+    //     let card1Y = card1.getY();
+    //     let card2Height = card2.getHeight();
+    //     let card2X = card2.getX();
+    //     let card2Y = card2.getY();
+    //     let rightAreaEl = this.down('#right-area').getEl();
+    //     let rightAreaScroll = rightAreaEl.getScroll();
+    //     let boardArea = this.down('#board-area');
+    //     let boardAreaScroll = boardArea.getEl().getScroll();
+    //     let boardAreaButtons = boardArea.getEl().dom.getElementsByClassName('rui-leftright');
+    //     let buttonAreaHeight = (boardAreaButtons && boardAreaButtons.length) ? boardAreaButtons[0].getBoundingClientRect().height : 0;
+    //     let cbBody = this.getCardboardBody();
+    //     let xOffset = -boardArea.getX() + boardArea.getEl().getMargin().left + boardAreaScroll.left + cbBody.getScrollLeft();
+    //     let yOffset = -rightAreaEl.getY() + rightAreaScroll.top + boardAreaScroll.top + cbBody.getScrollTop() - buttonAreaHeight + 8;
+
+    //     if (card1Y === card2Y) {
+    //         card1Y += yOffset;
+    //         card2Y += yOffset;
+    //     }
+    //     else if (card1Y > card2Y) {
+    //         card1Y += yOffset;
+    //         card2Y += yOffset + card2Height;
+    //     }
+    //     else {
+    //         card1Y += yOffset + card1Height;
+    //         card2Y += yOffset;
+    //     }
+
+    //     if (card1X === card2X) {
+    //         card1X += xOffset;
+    //         card2X += xOffset;
+    //     }
+    //     else if (card1X > card2X) {
+    //         card1X += xOffset;
+    //         card2X += xOffset + cardWidth;
+    //     }
+    //     else {
+    //         card1X += xOffset + cardWidth;
+    //         card2X += xOffset;
+    //     }
+
+    //     return {
+    //         type: "path",
+    //         path: card1Y === card2Y ?
+    //             `M${card1X},${card1Y} C${card1X},${card1Y - 10} ${card2X},${card2Y - 10} ${card2X},${card2Y}`
+    //             :
+    //             `M${card1X},${card1Y} C${card1X + 25},${(card1Y + (card2Y - card1Y) / 8)} ${card2X - 25},${(card2Y - (card2Y - card1Y) / 8)} ${card2X},${card2Y}`,
+    //         fill: "transparent",
+    //         stroke,
+    //         "stroke-width": "1"
+    //     };
+    // },
+
     generateDependencyLine: function (predecessorCard, successorCard) {
         // If a project swimlane is collapsed, the card isn't hidden, but it's coordinates will be 0,0
         if (!predecessorCard.getY() || !successorCard.getY()) {
@@ -1288,7 +1434,8 @@ Ext.define("release-tracking-with-filters", {
         let angle = 0;
         let stroke = "grey"; // "#D1D1D1";
         let circleRadius = 3;
-        let cardHeight = predecessorCard.getHeight();
+        let predCardHeight = predecessorCard.getHeight();
+        let succCardHeight = successorCard.getHeight();
         let cardWidth = predecessorCard.getWidth();
         let predX = predecessorCard.getX();
         let predY = predecessorCard.getY();
@@ -1324,45 +1471,36 @@ Ext.define("release-tracking-with-filters", {
         }
 
         let xOffset = -boardArea.getX() + boardArea.getEl().getMargin().left + boardAreaScroll.left + cbBody.getScrollLeft();
-        let yOffset = -rightAreaEl.getY() + rightAreaScroll.top + boardAreaScroll.top + cbBody.getScrollTop() - buttonAreaHeight - 1;
+        let yOffset = -rightAreaEl.getY() + rightAreaScroll.top + boardAreaScroll.top + cbBody.getScrollTop() - buttonAreaHeight + 9;
 
         if (predY === succY) {
-            predY += cardHeight / 2 + yOffset;
-            succY += cardHeight / 2 + yOffset;
+            predY += predCardHeight / 2 + yOffset;
+            succY += succCardHeight / 2 + yOffset;
         }
         else if (predY > succY) {
-            succY += cardHeight + yOffset;
-            predY += yOffset;
+            succY += succCardHeight + yOffset;
+            predY += yOffset - 4;
             angle = -60;
         }
         else {
-            predY += cardHeight + yOffset;
-            succY += yOffset;
+            predY += predCardHeight + yOffset;
+            succY += yOffset - 4;
             angle = 60;
         }
 
         predX += cardWidth + circleRadius + xOffset;
         succX += xOffset - circleRadius;
 
-        // Half Circle
-        // items.push({
-        //     type: "path",
-        //     path: Ext.String.format("M{0} {1} A{2},{2} 0 0,0,{0},0",
-        //         p.x, p.y, circleRadius
-        //     ),
-        //     fill: 'grey'
-        // });
-
         // Dashed line connecting dependencies
         items.push({
             type: "path",
-            path: Ext.String.format("M{0} {1} L {2} {3}",
-                predX, predY, succX, succY,
-            ),
+            path: predY === succY ?
+                `M${predX},${predY} C${predX},${predY - 10} ${succX},${succY - 10} ${succX},${succY}`
+                :
+                `M${predX + 1.5},${predY} C${predX + 50},${(predY + (succY - predY) / 8)} ${succX - 50},${(succY - (succY - predY) / 8)} ${succX - 1.5},${succY}`,
             fill: "transparent",
             stroke,
-            "stroke-width": "1",
-            "stroke-dasharray": "3",
+            "stroke-width": "1"
         });
 
         // Circle from predecessor
@@ -1441,7 +1579,6 @@ Ext.define("release-tracking-with-filters", {
             Deft.promise.Promise.all(promises).then({
                 scope: this,
                 success: function (preds) {
-                    // let results = _.flatten(preds);
                     def.resolve(preds);
                 },
                 failure: function (e) {
@@ -1489,7 +1626,6 @@ Ext.define("release-tracking-with-filters", {
     },
 
     drawDependencies: function (items) {
-
         let cbHeader = this.getCardboardHeader();
         let cbBody = this.getCardboardBody();
         let yOffset = -cbHeader.getHeight() - 120;
