@@ -624,8 +624,16 @@ Ext.define("release-tracking-with-filters", {
             context: this.currentDataContext,
             enablePostGet: true,
             enableRootLevelPostGet: true,
-            clearOnLoad: false
-
+            clearOnLoad: false,
+            listeners: {
+                scope: this,
+                beforeexpand: function (node) {
+                    // Prevent a reload of the board when expanding a Feature in the Grid to show it's children
+                    if (node && node.internalId !== 'root') {
+                        this.expandingRow = true;
+                    }
+                }
+            }
         });
     },
 
@@ -743,7 +751,13 @@ Ext.define("release-tracking-with-filters", {
                 scope: this,
                 viewchange: this._update,
                 load: function (grid) {
-                    this._onGridLoad(grid);
+                    // Prevent a reload of the board when expanding a Feature in the Grid to show it's children
+                    if (this.expandingRow) {
+                        this.expandingRow = false;
+                    }
+                    else {
+                        this._onGridLoad(grid);
+                    }
                 }
             },
             plugins: [{
@@ -786,6 +800,7 @@ Ext.define("release-tracking-with-filters", {
                 enableColumnMove: false,
                 enableInlineAdd: false,
                 enableRanking: true,
+                allowDeselect: true,
                 store: store,
                 storeConfig: {
                     context: this.currentDataContext,
@@ -794,6 +809,10 @@ Ext.define("release-tracking-with-filters", {
                     enablePostGet: true,
                     pageSize: 2000,
                     limit: Infinity
+                },
+                selModel: {
+                    selType: 'rallyrowmodel',
+                    selectionMode: 'MULTI'
                 },
                 columnCfgs: [{
                     dataIndex: 'FormattedID',
@@ -804,11 +823,14 @@ Ext.define("release-tracking-with-filters", {
                 }],
                 listeners: {
                     scope: this,
-                    itemclick: function (grid, record) {
-                        // Ignore clicks on non root items
-                        if (record.get('_type') == this.lowestPiTypePath.toLowerCase()) {
-                            this._onPiSelected(record);
+                    selectionchange: function (grid, selected) {
+                        this._onPiSelected(selected);
+                    },
+                    beforeselect: function (grid, record) {
+                        if (record.get('_type') !== this.lowestPiTypePath.toLowerCase()) {
+                            return false;
                         }
+                        return true;
                     }
                 }
             }
@@ -902,21 +924,15 @@ Ext.define("release-tracking-with-filters", {
         this._onResize();
     },
 
-    _onPiSelected: function (pi) {
-        let filter;
-        if (this.selectedPi === pi) {
-            // Unselecting the pi
-            filter = this.storiesFilter;
-            delete this.selectedPi;
-        }
-        else {
-            this.selectedPi = pi;
-            let piFilter = Rally.data.wsapi.Filter({
+    _onPiSelected: function (items) {
+        let filter = this.storiesFilter;
+
+        if (items.length) {
+            filter = this.storiesFilter.and(Rally.data.wsapi.Filter({
                 property: this.lowestPiTypeName,
-                operator: '=',
-                value: pi.get('_ref')
-            });
-            filter = this.storiesFilter ? this.storiesFilter.and(piFilter) : piFilter;
+                operator: 'in',
+                value: _.map(items, r => r.get('_ref'))
+            }));
         }
         this.buckets = {};
         this.board.refresh({
