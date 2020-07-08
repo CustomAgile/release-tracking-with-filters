@@ -1074,7 +1074,7 @@ Ext.define("release-tracking-with-filters", {
     getCardConfig: function () {
         if (this.down('#cardTypeCombo').getValue() === 'Stories') {
             return {
-                fields: ['Feature', 'Project', 'PredecessorsAndSuccessors']
+                fields: ['ScheduleState', 'Feature', 'Project', 'PredecessorsAndSuccessors']
             };
             // let config = {};
             // if (this.down('#swimlaneCombo').getValue() === 'Project') {
