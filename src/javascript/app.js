@@ -948,12 +948,33 @@ Ext.define("release-tracking-with-filters", {
         });
     },
 
+    _getSelectedPiFilter: function () {
+        let filter = null;
+        let grid = this.grid && this.grid.getGridOrBoard();
+        let items = grid.selModel && grid.selModel.selected && grid.selModel.selected.items;
+
+        if (items && items.length) {
+            filter = Ext.create('Rally.data.wsapi.Filter', {
+                property: this.lowestPiTypeName,
+                operator: 'in',
+                value: _.map(items, r => r.get('_ref'))
+            });
+        }
+        return filter;
+    },
+
     _addPisBoard: function (filter, iterations) {
         let boardDeferred = Ext.create('Deft.Deferred');
         let boardArea = this.down('#board-area');
         boardArea.removeAll();
 
         this.buckets = {};
+
+        let piFilter = this._getSelectedPiFilter();
+
+        if (piFilter) {
+            filter = filter.and(piFilter);
+        }
 
         // Create a column for each iteration shared by the projects
         let endDateSorted = _.sortBy(iterations, function (i) {
