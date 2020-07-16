@@ -105,6 +105,11 @@ Ext.define("release-tracking-with-filters", {
                 xtype: 'container',
                 layout: 'vbox',
                 margin: '0 0 0 30',
+            }, {
+                id: 'print-btn-area',
+                xtype: 'container',
+                layout: 'vbox',
+                margin: '0 0 0 15',
             }]
         }, {
             id: 'board-area',
@@ -254,7 +259,8 @@ Ext.define("release-tracking-with-filters", {
                     }
                 }
             }
-        }]);
+        }
+        ]);
 
         this.down('#dependency-controls-area').add([{
             xtype: 'container',
@@ -265,32 +271,6 @@ Ext.define("release-tracking-with-filters", {
                 cls: 'date-label control-label'
             }]
         },
-        // TODO: Determine if this functionality is needed
-        // {
-        //     xtype: 'checkbox',
-        //     stateful: true,
-        //     stateId: this.context.getScopedStateId('ReleaseTrackingWithFilters.ShowLinesBetweenSiblingStoriesCheckbox'),
-        //     stateEvents: ['change'],
-        //     boxLabel: 'Show Lines Between Stories Under The Same Feature',
-        //     boxLabelCls: 'dependency-label',
-        //     labelWidth: 255,
-        //     width: 300,
-        //     name: 'linesBetweenSiblingStories',
-        //     inputValue: true,
-        //     itemId: 'linesBetweenSiblingsCheckbox',
-        //     cls: 'dependency-checkbox',
-        //     margin: '0 3 3 0',
-        //     listeners: {
-        //         scope: this,
-        //         change: function (cmp, showLines) {
-        //             this.removeDependencyLines();
-
-        //             if (showLines) {
-        //                 this.showLines();
-        //             }
-        //         }
-        //     }
-        // },
         {
             xtype: 'checkbox',
             stateful: true,
@@ -411,6 +391,14 @@ Ext.define("release-tracking-with-filters", {
                 }
             ]
         }]);
+
+        this.down('#print-btn-area').add({
+            xtype: 'rallybutton',
+            iconOnly: true,
+            iconCls: 'icon-print',
+            cls: 'rly-small secondary',
+            handler: () => this.prepareAppForScreenshot()
+        });
 
         let timeboxScope = this.getContext().getTimeboxScope();
         this._onTimeboxScopeChange(timeboxScope);
@@ -580,7 +568,9 @@ Ext.define("release-tracking-with-filters", {
         // Hiding one of the advanced filters throws an error once this method is 
         // called and we try to set the grid height. Waiting a bit first solves this
         setTimeout(function () {
-            // this.is_a_nightmare() === true
+            if (this.down('#filter-area')) {
+                this.down('#filter-area').getCollapsed() ? this.ancestorFilterPlugin.hideHelpButton() : this.ancestorFilterPlugin.showHelpButton();
+            }
             let gridArea = this.down('#grid-area');
             let grid = this.down('#pisGrid');
 
@@ -1034,7 +1024,11 @@ Ext.define("release-tracking-with-filters", {
             height: this.down('#board-area').getHeight(),
             itemId: 'releaseCardboard',
             type: ['HierarchicalRequirement'],
-            plugins: [{ ptype: 'rallyfixedheadercardboard' }],
+            plugins: [
+                { ptype: 'rallyfixedheadercardboard' },
+                { ptype: 'rallyscrollablecardboard' },
+                { ptype: 'releasetrackingprinting' },
+            ],
             attribute: 'Iteration',
             overflowY: 'hidden',
             storeConfig: {
@@ -1226,59 +1220,6 @@ Ext.define("release-tracking-with-filters", {
         this.featureDependencyFilters = filters;
     },
 
-    // TODO: Determine if this functionality is needed
-    // showLines: async function () {
-    //     let lines = [];
-    //     this.removeDependencyLines();
-    //     this.setLoading('Drawing Lines');
-
-    //     if (this.down('#linesBetweenSiblingsCheckbox').getValue()) {
-    //         lines = lines.concat(this.getStorySiblingLines());
-    //     }
-
-    //     this.drawDependencies(lines);
-
-    //     this.setLoading(false);
-    // },
-
-    // TODO: Determine if this functionality is needed
-    // getStorySiblingLines: function () {
-    //     let board = this.down('#releaseCardboard');
-    //     let isStoryCards = this.down('#cardTypeCombo').getValue() === 'Stories';
-    //     let featureHash = {};
-    //     let lines = [];
-
-    //     if (board && isStoryCards) {
-    //         let cards = board.getCards();
-
-    //         for (let card of cards) {
-    //             let story = card.getRecord();
-
-    //             if (story.get('Feature')) {
-    //                 let id = story.get('Feature').ObjectID;
-    //                 if (!featureHash[id]) {
-    //                     featureHash[id] = [];
-    //                 }
-    //                 featureHash[id].push(card);
-    //             }
-    //         }
-
-    //         for (let featureId in featureHash) {
-    //             let currentCards = featureHash[featureId];
-    //             for (let i = 0; i < currentCards.length - 1; i++) {
-    //                 let card = currentCards[i];
-    //                 for (let j = i + 1; j < currentCards.length; j++) {
-    //                     let line = this.generateStoryLine(card, currentCards[j]);
-    //                     if (line) { lines.push(line); }
-
-    //                 }
-    //             }
-    //         }
-    //     }
-
-    //     return lines;
-    // },
-
     showAllStoryDependencyLines: function () {
         let def = Ext.create('Deft.Deferred');
         let board = this.down('#releaseCardboard');
@@ -1398,68 +1339,9 @@ Ext.define("release-tracking-with-filters", {
         });
     },
 
-    // TODO: Determine if this functionality is needed
-    // generateStoryLine: function (card1, card2) {
-    //     // If a project swimlane is collapsed, the card isn't hidden, but it's coordinates will be 0,0
-    //     if (!card1.getY() || !card2.getY()) {
-    //         return null;
-    //     }
-
-    //     let stroke = 'black';
-    //     let card1Height = card1.getHeight();
-    //     let cardWidth = card1.getWidth();
-    //     let card1X = card1.getX();
-    //     let card1Y = card1.getY();
-    //     let card2Height = card2.getHeight();
-    //     let card2X = card2.getX();
-    //     let card2Y = card2.getY();
-    //     let rightAreaEl = this.down('#right-area').getEl();
-    //     let rightAreaScroll = rightAreaEl.getScroll();
-    //     let boardArea = this.down('#board-area');
-    //     let boardAreaScroll = boardArea.getEl().getScroll();
-    //     let boardAreaButtons = boardArea.getEl().dom.getElementsByClassName('rui-leftright');
-    //     let buttonAreaHeight = (boardAreaButtons && boardAreaButtons.length) ? boardAreaButtons[0].getBoundingClientRect().height : 0;
-    //     let cbBody = this.getCardboardBody();
-    //     let xOffset = -boardArea.getX() + boardArea.getEl().getMargin().left + boardAreaScroll.left + cbBody.getScrollLeft();
-    //     let yOffset = -rightAreaEl.getY() + rightAreaScroll.top + boardAreaScroll.top + cbBody.getScrollTop() - buttonAreaHeight + 8;
-
-    //     if (card1Y === card2Y) {
-    //         card1Y += yOffset;
-    //         card2Y += yOffset;
-    //     }
-    //     else if (card1Y > card2Y) {
-    //         card1Y += yOffset;
-    //         card2Y += yOffset + card2Height;
-    //     }
-    //     else {
-    //         card1Y += yOffset + card1Height;
-    //         card2Y += yOffset;
-    //     }
-
-    //     if (card1X === card2X) {
-    //         card1X += xOffset;
-    //         card2X += xOffset;
-    //     }
-    //     else if (card1X > card2X) {
-    //         card1X += xOffset;
-    //         card2X += xOffset + cardWidth;
-    //     }
-    //     else {
-    //         card1X += xOffset + cardWidth;
-    //         card2X += xOffset;
-    //     }
-
-    //     return {
-    //         type: "path",
-    //         path: card1Y === card2Y ?
-    //             `M${card1X},${card1Y} C${card1X},${card1Y - 10} ${card2X},${card2Y - 10} ${card2X},${card2Y}`
-    //             :
-    //             `M${card1X},${card1Y} C${card1X + 25},${(card1Y + (card2Y - card1Y) / 8)} ${card2X - 25},${(card2Y - (card2Y - card1Y) / 8)} ${card2X},${card2Y}`,
-    //         fill: "transparent",
-    //         stroke,
-    //         "stroke-width": "1"
-    //     };
-    // },
+    prepareAppForScreenshot: function () {
+        this.board.openPrintPage({ title: `Release Tracking - ${new Date().toISOString()}` });
+    },
 
     generateDependencyLine: function (predecessorCard, successorCard) {
         // If a project swimlane is collapsed, the card isn't hidden, but it's coordinates will be 0,0
@@ -1815,6 +1697,12 @@ Ext.define("release-tracking-with-filters", {
     },
 
     onTimeboxScopeChange: function (newTimeboxScope) {
+        let queryParams = Ext.Object.fromQueryString(window.location.search);
+        if (queryParams.timebox && newTimeboxScope) {
+            queryParams.timebox = newTimeboxScope.getRecord() ? newTimeboxScope.getRecord().get('_ref') : newTimeboxScope.getType();
+            let queryString = Ext.Object.toQueryString(queryParams);
+            location.href = location.origin + location.pathname + '?' + queryString;
+        }
         this.callParent(arguments);
         this._onTimeboxScopeChange(newTimeboxScope);
         this._update();

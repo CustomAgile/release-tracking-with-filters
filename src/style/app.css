@@ -257,3 +257,21 @@ li {
     font-weight: normal;
     font-family: NotoSans, Helvetica, Arial;
 }
+
+div.print-page div.fixed-header-card-board,
+div.print-page div.rally-grid,
+div.print-page div.rally-grid div.x-panel-body,
+div.print-page div.rally-grid div.x-panel-body div.x-tree-view {
+    height: 100% !important;
+}
+
+div.print-page div.rally-grid div.grid-pager {
+    position: relative !important;
+    top: 30px !important;
+}
+
+.print-info-text, .send-to-printer {
+    font-family: NotoSans,Helvetica,Arial;
+    font-size: 15px;
+    padding: 5px;
+}
